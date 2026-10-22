@@ -112,18 +112,18 @@ export default function Page() {
   useEffect(() => { syncSpreadsheet() }, [])
 
   const courseTimes = useMemo(() => {
-    const courseBlocks = blocks.filter((b) => b.curso === course)
-    const timesSet = new Set(courseBlocks.map((b) => b.horario))
-    return Array.from(timesSet).sort((a, b) => a.localeCompare(b))
+    const courseBlocks = blocks.filter((b: Block) => b.curso === course)
+    const timesSet = new Set(courseBlocks.map((b: Block) => b.horario))
+    return Array.from(timesSet).sort((a: string, b: string) => a.localeCompare(b))
   }, [blocks, course])
 
-  const visible = blocks.filter((b) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
-  const teachers = useMemo(() => [...new Set(blocks.flatMap((b) => [b.docente, b.suplente].filter(Boolean)))], [blocks])
-  const searchResults = blocks.filter((b) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
-  const dayBlocks = blocks.filter((b) => b.tipo !== 'Recreo')
+  const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
+  const teachers = useMemo(() => [...new Set(blocks.flatMap((b: Block) => [b.docente, b.suplente].filter(Boolean)))], [blocks])
+  const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
+  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
-    setBlocks((current) => current.map((b) => b.id === next.id ? next : b))
+    setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b))
     setEditing(null)
     setDirty((n) => n + 1) 
   }
@@ -317,7 +317,7 @@ export default function Page() {
       <span>© 2026 E.E.S.T. N° 6 · Sistema de Gestión Escolar</span>
       <span className="flex items-center gap-1.5"><Zap className="size-3 text-[#79b82a]" />Sincronización en vivo con Drive</span>
     </footer>
-    {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { setBlocks((bs) => bs.filter((b) => b.id !== editing.id)); setEditing(null); setDirty((n) => n + 1) }} />}
+    {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); setEditing(null); setDirty((n) => n + 1) }} />}
     {showRecreosModal && <RecreosModal course={course} blocks={blocks} setBlocks={setBlocks} onClose={() => setShowRecreosModal(false)} setDirty={setDirty} />}
   </div>
 }
@@ -352,7 +352,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
           if (match.length === 0) {
             rowData.push("")
           } else {
-            const txt = match.map(b => `${b.materia} (${b.docente}${b.suplente ? ' / Sup: ' + b.suplente : ''})${b.grupo ? ' [' + b.grupo + ']' : ''}`).join(" | ")
+            const txt = match.map((b: Block) => `${b.materia} (${b.docente}${b.suplente ? ' / Sup: ' + b.suplente : ''})${b.grupo ? ' [' + b.grupo + ']' : ''}`).join(" | ")
             rowData.push(txt)
           }
         })
@@ -1091,7 +1091,7 @@ function Stat({ label, value, icon }: { label: string; value: number; icon: Reac
 
 function Editor({ block, courses, onClose, onSave, onDelete }: { block: Block; courses: string[]; onClose: () => void; onSave: (b: Block) => void; onDelete: () => void }) { 
   const [draft, setDraft] = useState(block) 
-  const set = (key: keyof Block, value: string) => setDraft((d) => ({ ...d, [key]: value })) 
+  const set = (key: keyof Block, value: string) => setDraft((d: Block) => ({ ...d, [key]: value })) 
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true">
     <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
       <div className="flex items-center justify-between border-b p-5">
@@ -1104,7 +1104,7 @@ function Editor({ block, courses, onClose, onSave, onDelete }: { block: Block; c
         <Field label="Docente"><input value={draft.docente} onChange={(e) => set('docente', e.target.value)} /></Field>
         <Field label="Día"><select value={draft.dia} onChange={(e) => set('dia', e.target.value)}>{days.map((d) => <option key={d}>{d}</option>)}</select></Field>
         <Field label="Horario"><input value={draft.horario} onChange={(e) => set('horario', e.target.value)} placeholder="Ej. 11:50–12:50 o 09:40–09:50" /></Field>
-        <Field label="Tipo de horario"><select value={draft.tipo} onChange={(e) => { const tipo = e.target.value as Block['tipo']; setDraft((d) => ({ ...d, tipo, turno: tipo === 'Taller' ? 'Taller' : 'Teoría', materia: tipo === 'Recreo' ? 'Recreo' : d.materia })) }}><option>Teoría</option><option>Taller</option><option>Recreo</option></select></Field>
+        <Field label="Tipo de horario"><select value={draft.tipo} onChange={(e) => { const tipo = e.target.value as Block['tipo']; setDraft((d: Block) => ({ ...d, tipo, turno: tipo === 'Taller' ? 'Taller' : 'Teoría', materia: tipo === 'Recreo' ? 'Recreo' : d.materia })) }}><option>Teoría</option><option>Taller</option><option>Recreo</option></select></Field>
         <Field label="Grupo"><select value={draft.grupo ?? ''} onChange={(e) => set('grupo', e.target.value)}><option value="">Curso completo</option><option>Grupo A</option><option>Grupo B</option><option>Ambos</option></select></Field>
         <Field label="Situación de revista"><select value={draft.situacionRevista} onChange={(e) => set('situacionRevista', e.target.value)}><option>Titular</option><option>Provisional</option><option>Titular Interino</option></select></Field>
         <Field label="Suplente" wide><input value={draft.suplente ?? ''} onChange={(e) => set('suplente', e.target.value)} placeholder="Opcional" /></Field>
