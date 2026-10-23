@@ -241,8 +241,8 @@ export default function Page() {
 
   return (
     <>
-      {/* CAPA DE FONDO FIJA PARA MÓVILES Y ESCRITORIO */}
-      <div className="fixed inset-0 -z-10 bg-[url('/fondo.jpg')] bg-cover bg-center bg-no-repeat pointer-events-none" />
+      {/* CAPA DE FONDO FIJA Y ADAPTABLE 100% */}
+      <div className="fixed inset-0 w-full h-[100dvh] -z-10 bg-[url('/fondo.jpg')] bg-cover bg-center bg-no-repeat pointer-events-none opacity-90" />
       
       <div className="min-h-screen text-slate-950 flex flex-col">
         <header className="border-b border-white/20 bg-white/90 backdrop-blur-md shadow-sm print:hidden">
@@ -314,7 +314,6 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
   const tableRef = useRef<HTMLDivElement>(null)
   const [downloadingImg, setDownloadingImg] = useState(false)
 
-  // Motor de calendario CSS Grid
   const timePattern = /(\d{1,2}:\d{2})\s*[-– aA]+\s*(\d{1,2}:\d{2})/i;
   
   const courseBlocks = blocks.filter((b: Block) => b.curso === course);
@@ -333,11 +332,14 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     return h * 60 + m;
   }
 
-  // Altura dinámica más compacta (1 min = 1.1 px) para reducir espacios vacíos
+  // USO DE MINMAX PARA EVITAR RECORTES:
+  // En lugar de forzar una altura máxima, usamos minmax() para permitir 
+  // que la fila se expanda automáticamente si el texto del cuadro lo requiere.
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
-    return `${Math.max(dur * 1.1, 28)}px`; 
+    // Base dinámica según duración, pero se autoexpande si hace falta (auto)
+    return `minmax(${Math.max(dur * 1.5, 45)}px, auto)`; 
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -457,12 +459,12 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-[#0052cc]" label="Titular" />
         <Legend color="bg-[#cc0000]" label="Provisional" />
         <Legend color="bg-slate-900" label="Titular interino" />
-        <Legend color="bg-[#0b5c46]" label="Suplente" />
+        <Legend color="bg-[#1b5e20]" label="Suplente" />
       </div>
       <span className="text-slate-600">Doble clic en los cuadrados para editarlos</span>
     </div>
 
-    {/* ZONA DE DESCARGA - CAPTURA CON FONDO BLANCO LIMPIO PARA EL PNG */}
+    {/* ZONA DE DESCARGA - FONDO BLANCO PURO AL DESCARGAR */}
     <div ref={tableRef} className="relative w-full max-w-full bg-white p-4 sm:p-6 rounded-2xl shadow-xl print:shadow-none print:p-0">
       
       <div className="relative z-10 w-full min-w-[850px]">
@@ -503,7 +505,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         {/* GRILLA DEL CALENDARIO */}
         <div className="pb-2">
           {boundaries.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: `70px repeat(${selectedDays.length}, minmax(120px, 1fr))`, gridTemplateRows: `36px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-white rounded-xl overflow-hidden relative shadow-sm">
+            <div style={{ display: 'grid', gridTemplateColumns: `70px repeat(${selectedDays.length}, minmax(130px, 1fr))`, gridTemplateRows: `36px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-white rounded-xl overflow-hidden relative shadow-sm">
               
               {/* Cabeceras de Días (Verde oscuro) */}
               <div className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-[10px] uppercase tracking-widest shadow-inner z-30">
@@ -556,7 +558,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                       </>
                     ) : (
                       <>
-                        <span className="text-[#0b5c46] text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
+                        <span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
                         <span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span>
                       </>
                     )}
@@ -564,7 +566,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                 )
               })}
 
-              {/* Bloques de Materias Proporcionales */}
+              {/* Bloques de Materias Proporcionales (Expansibles) */}
               {Object.entries(cellGroups).map(([key, blocksInCell]) => {
                 const [dia, start, end] = key.split('_');
                 const startIdx = boundaries.indexOf(start);
@@ -649,25 +651,23 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-2 flex flex-col w-full h-full overflow-hidden relative shadow-sm hover:shadow-md transition border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-l-slate-400 bg-white'}`}>
-    {block.grupo && <div className="mb-1"><span className="rounded bg-[#0b5c46] px-1.5 py-0.5 text-[9px] font-black text-white uppercase shadow-sm leading-none">{block.grupo}</span></div>}
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border p-1.5 sm:p-2 flex flex-col w-full h-full relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] ${block.tipo === 'Teoría' ? 'border-[#8ebf42]/40 border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-slate-300 border-l-slate-400 bg-slate-100'}`}>
+    <div className="flex flex-col gap-0.5 items-start w-full">
+      {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
+      <p className={`text-[10.5px] sm:text-[11px] font-black uppercase tracking-tight break-words whitespace-normal w-full leading-[1.1] text-[#0b5c46]`}>{block.materia}</p>
+    </div>
     
-    <div className="flex flex-col gap-1">
-      <p className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[#0b5c46] break-words whitespace-normal leading-tight">{block.materia}</p>
-      
+    <div className="mt-auto pt-1">
       <div className="flex flex-col">
-        {block.docente ? <span className={`${statusColorClass} text-[11px] sm:text-[12px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
-        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 mt-0.5">{block.horario}</span>
+        {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[11.5px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[9px] text-slate-400 font-bold uppercase">Sin docente</span>}
+        <span className="text-[7.5px] sm:text-[9px] font-mono font-bold text-slate-500 mt-0.5">{block.horario}</span>
       </div>
     </div>
 
     {block.suplente && (
-      <div className="mt-1.5 w-fit rounded-full bg-[#dcfce7] px-2 py-0.5 border border-[#86efac]">
-        <span className="text-[9px] sm:text-[10px] font-bold text-[#166534] uppercase leading-tight">
-          Suplente
-        </span>
-        <div className="text-[10px] font-medium text-[#14532d] uppercase mt-0.5 break-words whitespace-normal leading-tight">
-          {block.suplente}
+      <div className="mt-1">
+        <div className="inline-block rounded-md bg-[#e8f5e9] px-1.5 py-0.5 text-[8.5px] sm:text-[10px] font-bold text-[#1b5e20] border border-[#c8e6c9] break-words uppercase leading-tight">
+          Sup: {block.suplente}
         </div>
       </div>
     )}
