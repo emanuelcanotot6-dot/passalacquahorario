@@ -330,7 +330,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
-    return `${Math.max(dur * 1.8, 35)}px`; 
+    return `${Math.max(dur * 1.8, 45)}px`; // Se subió un poco el alto mínimo para acomodar el texto extra
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -545,7 +545,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                 <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-1 z-10 relative">
                    <div className={`flex gap-1 h-full w-full ${blocksInCell.length > 1 ? 'flex-row' : 'flex-col'}`}>
                       {blocksInCell.map((b: Block) => (
-                         <div key={b.id} className="flex-1 min-w-0 h-full w-full shadow-sm hover:shadow-md transition bg-white rounded-xl">
+                         <div key={b.id} className="flex-1 min-w-0 h-full w-full">
                            <BlockCard block={b} onDoubleClick={() => setEditing(b)} />
                          </div>
                       ))}
@@ -627,20 +627,24 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 }
 
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
-  const statusColorClass = block.situacionRevista === 'Titular' ? 'text-blue-700' : block.situacionRevista === 'Provisional' ? 'text-red-700' : 'text-gray-950'
+  const statusColorClass = block.situacionRevista === 'Titular' ? 'text-blue-800' : block.situacionRevista === 'Provisional' ? 'text-red-700' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border p-1.5 sm:p-2 flex flex-col h-full w-full overflow-hidden relative ${block.tipo === 'Teoría' ? 'border-[#9dcc39] bg-[#eaf7d9] text-[#205d19]' : 'border-slate-300 bg-slate-50 text-slate-700'}`}>
-    <div className="flex-1 min-h-0">
-      <div className="mb-0.5 flex items-start justify-between gap-1">
-        <p className="text-[10px] sm:text-[11px] font-extrabold leading-tight line-clamp-3">{block.materia}</p>
-        {block.grupo && <span className="rounded bg-[#168000] px-1 py-0.5 text-[8px] sm:text-[9px] font-black text-white shrink-0">{block.grupo}</span>}
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border-2 p-2 sm:p-2.5 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition ${block.tipo === 'Teoría' ? 'border-[#8ebf42] bg-[#eef8e1] text-[#1b5014]' : 'border-slate-300 bg-slate-100 text-slate-800'}`}>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="mb-1 flex items-start justify-between gap-1">
+        <p className="text-[11px] sm:text-xs font-extrabold leading-tight line-clamp-3">{block.materia}</p>
+        {block.grupo && <span className="rounded bg-[#168000] px-1.5 py-0.5 text-[9px] font-black text-white shrink-0">{block.grupo}</span>}
       </div>
-      <div className="flex flex-col text-[9px] sm:text-[10px] font-semibold mt-1">
-        {block.docente ? <span className={`${statusColorClass} font-bold line-clamp-2`}>{block.docente}</span> : <span className="text-slate-400">Sin docente</span>}
+      
+      <div className="mt-auto pt-1">
+        <div className="flex flex-col">
+          {block.docente ? <span className={`${statusColorClass} text-xs sm:text-[13px] font-black leading-tight line-clamp-2`}>{block.docente}</span> : <span className="text-xs text-slate-400 font-bold">Sin docente</span>}
+          <span className="text-[10px] sm:text-[11px] font-mono font-bold opacity-70 mt-0.5">{block.horario}</span>
+        </div>
       </div>
     </div>
     {block.suplente && (
-      <div className="mt-1 rounded border border-green-300 bg-green-50 px-1 py-0.5 text-[9px] font-bold text-green-800 shrink-0 truncate">
+      <div className="mt-1.5 rounded border border-green-400 bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-900 shrink-0 truncate">
         Sup: {block.suplente}
       </div>
     )}
