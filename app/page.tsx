@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { toPng } from 'html-to-image'
 import { Button } from '@/components/ui/button'
-import { CalendarDays, Check, ChevronDown, Cloud, Download, ListFilter, Pencil, Printer, Search, ShieldAlert, ShieldCheck, UserCheck, UserX, Users, X, Zap, Clock, Trash2, Plus, Image as ImageIcon, FileSpreadsheet, Coffee } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, Cloud, Download, ListFilter, Pencil, Printer, Search, ShieldAlert, ShieldCheck, UserCheck, UserX, Users, X, Zap, Clock, Trash2, Plus, Image as ImageIcon, FileSpreadsheet, Coffee, ArrowDownUp } from 'lucide-react'
 
 type View = 'horario' | 'docentes' | 'ausencias' | 'preceptores' | 'paro'
 type Status = 'Titular' | 'Provisional' | 'Titular Interino'
@@ -101,7 +101,8 @@ export default function Page() {
       ...blocks.flatMap((b: Block) => [b.docente, b.suplente]),
       ...ausencias.flatMap((a: AusenciaRecord) => [a.docenteAusente, a.docenteDecreto])
     ].filter(Boolean);
-    return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
+    const trimmedTeachers = allTeachers.map(t => t.trim());
+    return [...new Set(trimmedTeachers)].sort((a, b) => a.localeCompare(b));
   }, [blocks, ausencias])
 
   const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
@@ -146,8 +147,8 @@ export default function Page() {
       
       if (Array.isArray(rows) && rows.length) {
         const normalized = rows.map((row: any, index: number) => {
-          const doc = String(read(row, 'docente', 'Docente') || '')
-          let sit = String(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista') || '')
+          const doc = String(read(row, 'docente', 'Docente') || '').trim()
+          let sit = String(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista') || '').trim()
           if (!sit) {
             sit = doc.toUpperCase().includes('TI 2026') ? 'Titular Interino' : 'Titular'
           }
@@ -161,7 +162,7 @@ export default function Page() {
             materia: String(read(row, 'materia', 'Materia') || ''), 
             docente: doc, 
             situacionRevista: sit as Status, 
-            suplente: String(read(row, 'suplente', 'Suplente') || ''), 
+            suplente: String(read(row, 'suplente', 'Suplente') || '').trim(), 
             grupo: String(read(row, 'grupo', 'Grupo') || '') 
           }
         })
@@ -175,9 +176,9 @@ export default function Page() {
           mes: String(read(a, 'mes', 'Mes') || 'Octubre'),
           fecha: String(read(a, 'fecha', 'Fecha', 'Fecha / Horario') || new Date().toISOString().split('T')[0]),
           materia: String(read(a, 'materia', 'Materia') || ''),
-          docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || ''),
+          docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || '').trim(),
           estadoCobertura: (read(a, 'estadoCobertura', 'Estado Cobertura') || 'Sin cubrir') as CoberturaStatus,
-          docenteDecreto: String(read(a, 'docenteDecreto', 'Docente Decreto', 'PF Cubre por Decreto / Observación') || 'Sin cubrir')
+          docenteDecreto: String(read(a, 'docenteDecreto', 'Docente Decreto', 'PF Cubre por Decreto / Observación') || 'Sin cubrir').trim()
         }))
         setAusencias(normAus)
       }
@@ -185,8 +186,8 @@ export default function Page() {
       if (payload.preceptores && Array.isArray(payload.preceptores)) {
         const normPrec = payload.preceptores.map((p: any) => ({
           curso: String(read(p, 'curso', 'Curso') || ''),
-          preceptorTitular: String(read(p, 'preceptorTitular', 'Preceptor Titular') || ''),
-          preceptorSuplente: String(read(p, 'preceptorSuplente', 'Preceptor Suplente') || '')
+          preceptorTitular: String(read(p, 'preceptorTitular', 'Preceptor Titular') || '').trim(),
+          preceptorSuplente: String(read(p, 'preceptorSuplente', 'Preceptor Suplente') || '').trim()
         }))
         if (normPrec.some((p: PreceptorAssignment) => p.preceptorTitular || p.preceptorSuplente)) {
           setPreceptores(normPrec)
@@ -200,7 +201,7 @@ export default function Page() {
           curso: String(read(p, 'curso', 'Curso') || ''),
           horario: String(read(p, 'horario', 'Horario') || ''),
           materia: String(read(p, 'materia', 'Materia') || ''),
-          docente: String(read(p, 'docente', 'Docente') || ''),
+          docente: String(read(p, 'docente', 'Docente') || '').trim(),
           estadoParo: (read(p, 'estadoParo', 'Estado Paro') || 'normal') as Attendance,
           observaciones: String(read(p, 'observaciones', 'Observaciones') || ''),
           tipoPersonal: (read(p, 'tipoPersonal', 'Tipo Personal') || 'docente') as 'docente' | 'preceptor',
@@ -276,7 +277,7 @@ export default function Page() {
           </nav>
         </header>
         
-        <main className="mx-auto max-w-[1500px] px-4 sm:px-5 py-4 sm:py-6 flex-1">
+        <main className="mx-auto max-w-[1500px] px-4 sm:px-5 py-4 sm:py-6 flex-1 w-full">
           <div className="mb-6 print:hidden">
             <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/40">
               <div>
@@ -296,7 +297,7 @@ export default function Page() {
           </div>
 
           {view === 'horario' && <ScheduleView course={course} setCourse={setCourse} filter={filter} setFilter={setFilter} selectedDays={selectedDays} setSelectedDays={setSelectedDays} visible={visible} blocks={blocks} setBlocks={setBlocks} courses={courses} preceptores={preceptores} setEditing={setEditing} onAdd={() => setEditing({ id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–08:40', materia: 'Nueva materia', docente: '', situacionRevista: 'Titular' })} onManageRecreos={() => setShowRecreosModal(true)} />}
-          {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} results={searchResults} setEditing={setEditing} ausencias={ausencias} />}
+          {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} blocks={blocks} setEditing={setEditing} ausencias={ausencias} />}
           {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} blocks={blocks} />}
           {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
           {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
@@ -320,29 +321,23 @@ function Tab({ active, onClick, icon, label }: { active: boolean; onClick: () =>
 function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setSelectedDays, visible, blocks, setBlocks, courses, preceptores, setEditing, onAdd, onManageRecreos }: any) { 
   const tableRef = useRef<HTMLDivElement>(null)
   const [downloadingImg, setDownloadingImg] = useState(false)
-
   const timePattern = /(\d{1,2}:\d{2})\s*[-– aA]+\s*(\d{1,2}:\d{2})/i;
   
   const courseBlocks = blocks.filter((b: Block) => b.curso === course);
   const boundariesSet = new Set<string>();
   courseBlocks.forEach((b: Block) => {
     const m = b.horario.match(timePattern);
-    if (m) {
-      boundariesSet.add(m[1].padStart(5, '0'));
-      boundariesSet.add(m[2].padStart(5, '0'));
-    }
+    if (m) { boundariesSet.add(m[1].padStart(5, '0')); boundariesSet.add(m[2].padStart(5, '0')); }
   });
   const boundaries = Array.from(boundariesSet).sort();
 
   function timeToMins(t: string) {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
+    const [h, m] = t.split(':').map(Number); return h * 60 + m;
   }
 
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
-    const dur = timeToMins(end) - timeToMins(start);
-    return `minmax(${Math.max(dur * 1.1, 40)}px, auto)`; 
+    return `minmax(${Math.max((timeToMins(end) - timeToMins(start)) * 1.1, 40)}px, auto)`; 
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -352,14 +347,10 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     if (b.tipo === 'Recreo') return;
     const m = b.horario.match(timePattern);
     if (m) {
-      const start = m[1].padStart(5, '0');
-      const end = m[2].padStart(5, '0');
-      const key = `${b.dia}_${start}_${end}`;
+      const key = `${b.dia}_${m[1].padStart(5, '0')}_${m[2].padStart(5, '0')}`;
       if (!cellGroups[key]) cellGroups[key] = [];
       cellGroups[key].push(b);
-    } else {
-      untimedBlocks.push(b);
-    }
+    } else untimedBlocks.push(b);
   });
 
   const recreos = blocks.filter((b: Block) => b.curso === course && b.tipo === 'Recreo');
@@ -372,8 +363,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
       ["E.E.S.T. N° 6 - BANFIELD"],
       [`HORARIO ESCOLAR - CURSO: ${course}`],
       [`Preceptor Titular: ${preceptorInfo?.preceptorTitular || 'No asignado'}  |  Suplente: ${preceptorInfo?.preceptorSuplente || 'Sin asignar'}`],
-      [""],
-      ["HORARIO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"]
+      [""], ["HORARIO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"]
     ]
     
     boundaries.slice(0, -1).forEach((start, i) => {
@@ -392,19 +382,10 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
           const blocksInCell = cursoBlocks.filter((b: Block) => {
             const m = b.horario.match(timePattern);
             if (!m) return false;
-            const bStart = timeToMins(m[1].padStart(5, '0'));
-            const bEnd = timeToMins(m[2].padStart(5, '0'));
-            const segStart = timeToMins(start);
-            const segEnd = timeToMins(end);
-            return b.dia === day && bStart <= segStart && bEnd >= segEnd;
+            return b.dia === day && timeToMins(m[1].padStart(5, '0')) <= timeToMins(start) && timeToMins(m[2].padStart(5, '0')) >= timeToMins(end);
           });
-          
-          if (blocksInCell.length === 0) {
-            rowData.push("")
-          } else {
-            const txt = blocksInCell.map((b: Block) => `${b.materia} (${b.docente}${b.suplente ? ' / Sup: ' + b.suplente : ''})${b.grupo ? ' [' + b.grupo + ']' : ''}`).join(" | ")
-            rowData.push(txt)
-          }
+          if (blocksInCell.length === 0) rowData.push("")
+          else rowData.push(blocksInCell.map((b: Block) => `${b.materia} (${b.docente}${b.suplente ? ' / Sup: ' + b.suplente : ''})${b.grupo ? ' [' + b.grupo + ']' : ''}`).join(" | "))
         })
         exportData.push(rowData)
       }
@@ -421,15 +402,8 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     setDownloadingImg(true)
     try {
       const dataUrl = await toPng(tableRef.current, { cacheBust: true, quality: 1, pixelRatio: 2, backgroundColor: '#ffffff' })
-      const link = document.createElement('a')
-      link.download = `horario-curso-${course.replace('°', '').replace('°', '')}.png`
-      link.href = dataUrl
-      link.click()
-    } catch (err) {
-      alert('No se pudo generar la imagen. Probá nuevamente.')
-    } finally {
-      setDownloadingImg(false)
-    }
+      const link = document.createElement('a'); link.download = `horario-curso-${course.replace('°', '').replace('°', '')}.png`; link.href = dataUrl; link.click()
+    } catch { alert('No se pudo generar la imagen.') } finally { setDownloadingImg(false) }
   }
 
   const preceptorDelCurso = preceptores.find((p: PreceptorAssignment) => p.curso === course)
@@ -462,13 +436,12 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-[#0052cc]" label="Titular" />
         <Legend color="bg-[#cc0000]" label="Provisional" />
         <Legend color="bg-slate-900" label="Titular interino" />
-        <Legend color="bg-[#1b5e20]" label="Suplente" />
+        <Legend color="bg-[#0b5c46]" label="Suplente" />
       </div>
       <span className="text-slate-600">Doble clic en los cuadrados para editarlos</span>
     </div>
 
     <div ref={tableRef} className="relative w-full max-w-full bg-white p-4 sm:p-6 rounded-2xl shadow-xl print:shadow-none print:p-0">
-      
       <div className="relative z-10 w-full min-w-[850px]">
         <div className="flex items-center justify-between mb-6 sm:mb-8 px-2">
           <div className="flex items-center gap-4">
@@ -481,13 +454,10 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
               </div>
             </div>
           </div>
-
           <div className="flex items-center gap-4 sm:gap-6">
             {preceptorDelCurso && (
               <div className="flex items-center gap-3">
-                <div className="bg-transparent p-1">
-                  <UserCheck className="size-6 text-[#0b5c46] opacity-80" />
-                </div>
+                <div className="bg-transparent p-1"><UserCheck className="size-6 text-[#0b5c46] opacity-80" /></div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest leading-none mb-1">Preceptor Titular</span>
                   <span className="text-sm sm:text-base font-black text-slate-800 leading-none uppercase">{preceptorDelCurso.preceptorTitular || 'No asignado'}</span>
@@ -496,9 +466,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
               </div>
             )}
             <div className="hidden sm:block border-l border-slate-300 pl-4 py-1">
-              <p className="text-[11px] font-semibold italic text-slate-600 leading-tight w-28">
-                Formación técnica,<br />construyendo futuros
-              </p>
+              <p className="text-[11px] font-semibold italic text-slate-600 leading-tight w-28">Formación técnica,<br />construyendo futuros</p>
             </div>
           </div>
         </div>
@@ -506,57 +474,29 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <div className="pb-2">
           {boundaries.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: `70px repeat(${selectedDays.length}, minmax(130px, 1fr))`, gridTemplateRows: `36px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-white rounded-xl overflow-hidden relative shadow-sm">
-              
-              <div className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-[10px] uppercase tracking-widest shadow-inner z-30">
-                <Clock className="size-4 mr-1.5 opacity-80" /> HORARIO
-              </div>
-              {selectedDays.map((d, i) => (
-                <div key={d} style={{ gridColumn: i + 2, gridRow: 1 }} className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-xs uppercase tracking-[0.2em] shadow-inner z-30">{d}</div>
-              ))}
-
-              {selectedDays.map((day, dIdx) => (
-                boundaries.slice(0, -1).map((_, rIdx) => (
-                  <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100" />
-                ))
-              ))}
+              <div className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-[10px] uppercase tracking-widest shadow-inner z-30"><Clock className="size-4 mr-1.5 opacity-80" /> HORARIO</div>
+              {selectedDays.map((d, i) => <div key={d} style={{ gridColumn: i + 2, gridRow: 1 }} className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-xs uppercase tracking-[0.2em] shadow-inner z-30">{d}</div>)}
+              {selectedDays.map((day, dIdx) => boundaries.slice(0, -1).map((_, rIdx) => <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100" />))}
 
               {recreos.map(r => {
                  const m = r.horario.match(timePattern);
-                 if (!m) return null;
-                 const startIdx = boundaries.indexOf(m[1].padStart(5, '0'));
-                 const endIdx = boundaries.indexOf(m[2].padStart(5, '0'));
-                 if (startIdx === -1 || endIdx === -1) return null;
-                 
+                 if (!m || boundaries.indexOf(m[1].padStart(5, '0')) === -1) return null;
                  return (
-                   <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#fef9e7] z-0 flex items-center justify-center border-b border-t border-slate-100 cursor-pointer">
-                     <div className="flex items-center gap-2 text-[#d35400] opacity-90">
-                       <Coffee className="size-4" />
-                       <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.5em]">RECREO</span>
-                     </div>
+                   <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${boundaries.indexOf(m[1].padStart(5, '0')) + 2} / ${boundaries.indexOf(m[2].padStart(5, '0')) + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#fef9e7] z-0 flex items-center justify-center border-b border-t border-slate-100 cursor-pointer">
+                     <div className="flex items-center gap-2 text-[#d35400] opacity-90"><Coffee className="size-4" /><span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.5em]">RECREO</span></div>
                    </div>
                  )
               })}
 
               {boundaries.slice(0, -1).map((start, rIdx) => {
                 const end = boundaries[rIdx + 1];
-                
-                const isExplicitRecreo = recreos.some(r => {
-                   const m = r.horario.match(timePattern);
-                   return m && m[1].padStart(5, '0') === start && m[2].padStart(5, '0') === end;
-                });
-
+                const isExplicitRecreo = recreos.some(r => r.horario.match(timePattern)?.[1].padStart(5, '0') === start && r.horario.match(timePattern)?.[2].padStart(5, '0') === end);
                 return (
                   <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className={`border-r border-b border-slate-200 flex flex-col items-center justify-center p-1 font-mono z-20 ${isExplicitRecreo ? 'bg-[#fef9e7]' : 'bg-[#f8fafc]'}`}>
                     {isExplicitRecreo ? (
-                      <>
-                        <span className="text-[#d35400] text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
-                        <span className="text-[#e67e22] font-bold text-[8px] sm:text-[9px] leading-none mt-1">{end}</span>
-                      </>
+                      <><span className="text-[#d35400] text-[11px] sm:text-[13px] font-black leading-none">{start}</span><span className="text-[#e67e22] font-bold text-[8px] sm:text-[9px] leading-none mt-1">{end}</span></>
                     ) : (
-                      <>
-                        <span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
-                        <span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span>
-                      </>
+                      <><span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span><span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span></>
                     )}
                   </div>
                 )
@@ -564,20 +504,12 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
 
               {Object.entries(cellGroups).map(([key, blocksInCell]) => {
                 const [dia, start, end] = key.split('_');
-                const startIdx = boundaries.indexOf(start);
-                const endIdx = boundaries.indexOf(end);
                 const colIdx = selectedDays.indexOf(dia) + 2;
-                
-                if (startIdx === -1 || endIdx === -1 || colIdx < 2) return null;
-                
+                if (boundaries.indexOf(start) === -1 || colIdx < 2) return null;
                 return (
-                  <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-0.5 sm:p-1 z-10 relative">
+                  <div key={key} style={{ gridColumn: colIdx, gridRow: `${boundaries.indexOf(start) + 2} / ${boundaries.indexOf(end) + 2}` }} className="p-0.5 sm:p-1 z-10 relative">
                      <div className={`flex gap-1 h-full w-full ${blocksInCell.length > 1 ? 'flex-row' : 'flex-col'}`}>
-                        {blocksInCell.map((b: Block) => (
-                           <div key={b.id} className="flex-1 min-w-0 h-full w-full">
-                             <BlockCard block={b} onDoubleClick={() => setEditing(b)} />
-                           </div>
-                        ))}
+                        {blocksInCell.map((b: Block) => <div key={b.id} className="flex-1 min-w-0 h-full w-full"><BlockCard block={b} onDoubleClick={() => setEditing(b)} /></div>)}
                      </div>
                   </div>
                 )
@@ -592,67 +524,14 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
   </> 
 }
 
-function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
-  const [nuevoHorario, setNuevoHorario] = useState('09:40–09:50')
-  const recreosActuales = blocks.filter((b: Block) => b.curso === course && b.tipo === 'Recreo')
-
-  function agregarRecreo(e: React.FormEvent) {
-    e.preventDefault()
-    if (!nuevoHorario) return
-    const nuevo: Block = {
-      id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Recreo', dia: 'Lunes', horario: nuevoHorario, materia: 'Recreo', docente: '', situacionRevista: 'Titular'
-    }
-    setBlocks([...blocks, nuevo])
-    setDirty((n: number) => n + 1)
-  }
-
-  function eliminarRecreo(id: string) {
-    setBlocks(blocks.filter((b: Block) => b.id !== id))
-    setDirty((n: number) => n + 1)
-  }
-
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-      <div className="flex items-center justify-between border-b p-5">
-        <div><p className="text-xs font-bold uppercase tracking-widest text-[#866500]">Recreos</p><h2 className="text-xl font-black">Curso {course}</h2></div>
-        <button onClick={onClose} aria-label="Cerrar"><X /></button>
-      </div>
-      <div className="p-5 flex flex-col gap-4">
-        <form onSubmit={agregarRecreo} className="flex gap-2">
-          <input value={nuevoHorario} onChange={(e) => setNuevoHorario(e.target.value)} placeholder="Ej. 09:40–09:50" className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono font-bold" required />
-          <Button type="submit" className="bg-[#ffb700] text-slate-950 hover:bg-[#f5ad00] font-bold"><Plus className="size-4 mr-1" /> Sumar</Button>
-        </form>
-        <div className="border-t pt-3">
-          <p className="text-xs font-bold text-slate-500 mb-2">Recreos actuales:</p>
-          {recreosActuales.length === 0 ? <p className="text-sm text-slate-400 italic py-2">Sin recreos.</p> : (
-            <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto">
-              {recreosActuales.map((r: Block) => (
-                <div key={r.id} className="flex items-center justify-between rounded-xl border border-[#f39c12]/50 bg-[#ffeaa7] px-3 py-2">
-                  <span className="font-mono font-bold text-sm text-[#d35400]">{r.horario}</span>
-                  <Button variant="ghost" size="sm" onClick={() => eliminarRecreo(r.id)} className="text-red-600 hover:text-red-700 h-8 px-2"><Trash2 className="size-4" /></Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="flex justify-end border-t bg-slate-50 p-4 rounded-b-2xl">
-        <Button onClick={onClose} className="bg-[#0b5c46] text-white hover:bg-[#074030]">Aceptar</Button>
-      </div>
-    </div>
-  </div>
-}
-
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
-
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border p-1.5 flex flex-col h-full w-full overflow-y-auto overflow-x-hidden scrollbar-none relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] min-h-max ${block.tipo === 'Teoría' ? 'border-[#8ebf42]/40 border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-slate-300 border-l-slate-400 bg-slate-100'}`}>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border p-1.5 flex flex-col h-full w-full relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] min-h-max overflow-y-auto overflow-x-hidden scrollbar-none ${block.tipo === 'Teoría' ? 'border-[#8ebf42]/40 border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-slate-300 border-l-slate-400 bg-slate-100'}`}>
     <div className="flex-1 flex flex-col justify-between">
       <div className="flex flex-col gap-0.5 items-start w-full">
         {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[7px] sm:text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
         <p className={`text-[8.5px] sm:text-[11px] font-black uppercase tracking-tight break-words whitespace-normal w-full leading-[1.1] ${block.tipo === 'Teoría' ? 'text-[#0b5c46]' : 'text-[#0b5c46]'}`}>{block.materia}</p>
       </div>
-      
       <div className="mt-1 pt-0.5">
         <div className="flex flex-col">
           {block.docente ? <span className={`${statusColorClass} text-[9px] sm:text-[11px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[9px] text-slate-400 font-bold uppercase">Sin docente</span>}
@@ -661,7 +540,7 @@ function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () =
       </div>
     </div>
     {block.suplente && (
-      <div className="mt-0.5 rounded bg-white px-1 py-0.5 text-[8px] sm:text-[10px] font-black text-[#1b5e20] border border-[#c8e6c9] shrink-0 break-words uppercase whitespace-normal leading-tight">
+      <div className="mt-0.5 w-fit rounded bg-white px-1 py-0.5 text-[8px] sm:text-[10px] font-black text-[#1b5e20] border border-[#c8e6c9] shrink-0 break-words uppercase whitespace-normal leading-tight">
         SUP: {block.suplente}
       </div>
     )}
@@ -672,15 +551,32 @@ function Legend({ color, label }: { color: string; label: string }) {
   return <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/90 px-2 py-1 shadow-sm"><span className={`size-2 rounded-full ${color}`} />{label}</span> 
 }
 
-function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias }: any) { 
+function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias }: any) { 
   const [status, setStatus] = useState('Todos')
-  const filtered = results.filter((b: Block) => status === 'Todos' || (status === 'Suplentes' ? b.suplente?.toLowerCase().includes(query.toLowerCase()) : b.situacionRevista === status))
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
+  
+  const isExact = teachers.includes(query)
+  const baseBlocks = isExact 
+    ? blocks.filter((b: Block) => b.docente === query || b.suplente === query)
+    : blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
+  
+  const filtered = baseBlocks.filter((b: Block) => {
+    if (status === 'Todos') return true;
+    if (status === 'Suplentes') return isExact ? b.suplente === query : b.suplente?.toLowerCase().includes(query.toLowerCase());
+    return isExact ? b.situacionRevista === status && b.docente === query : b.situacionRevista === status;
+  })
+
   const selected = query ? query : 'Todos los docentes' 
 
-  // Filtrar las ausencias o coberturas donde aparece este docente específico + ORDENAR CRONOLÓGICAMENTE
+  // Ordenar cronológicamente ascendente o descendente
   const ausenciasDelDocente = ausencias
-    .filter((a: AusenciaRecord) => a.docenteAusente === selected || a.docenteDecreto === selected)
-    .sort((a: AusenciaRecord, b: AusenciaRecord) => (b.fecha || '').localeCompare(a.fecha || ''))
+    .filter((a: AusenciaRecord) => isExact 
+       ? (a.docenteAusente === query || a.docenteDecreto === query)
+       : (a.docenteAusente.toLowerCase().includes(query.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(query.toLowerCase())))
+    .sort((a: AusenciaRecord, b: AusenciaRecord) => {
+      if (sortOrder === 'desc') return (b.fecha || '').localeCompare(a.fecha || '')
+      return (a.fecha || '').localeCompare(b.fecha || '')
+    })
 
   return <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
     <aside className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 shadow-sm h-fit">
@@ -699,8 +595,8 @@ function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat label="Bloques semanales" value={filtered.length} icon={<CalendarDays />} />
         <Stat label="Cursos asignados" value={new Set(filtered.map((b: Block) => b.curso)).size} icon={<Users />} />
-        <Stat label="Como titular" value={filtered.filter((b: Block) => b.docente === selected && b.situacionRevista === 'Titular').length} icon={<ShieldCheck />} />
-        <Stat label="Como suplente" value={filtered.filter((b: Block) => b.suplente === selected).length} icon={<Check />} />
+        <Stat label="Como titular" value={filtered.filter((b: Block) => b.situacionRevista === 'Titular' && (isExact ? b.docente === query : true)).length} icon={<ShieldCheck />} />
+        <Stat label="Como suplente" value={filtered.filter((b: Block) => b.suplente && (isExact ? b.suplente === query : true)).length} icon={<Check />} />
       </div>
       
       <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden">
@@ -727,7 +623,11 @@ function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias
                   <td className="font-bold text-[#1b5014]">{b.materia}<div className="text-xs text-slate-600 font-semibold">{b.docente}</div></td>
                   <td>{b.dia}<div className="font-mono text-xs text-slate-500">{b.horario}</div></td>
                   <td><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{b.tipo}</span></td>
-                  <td><span className={`text-xs font-bold ${statusStyle[b.situacionRevista] || 'text-slate-600'}`}>{b.suplente === selected ? 'Suplente' : b.situacionRevista}</span></td>
+                  <td>
+                    <span className={`text-xs font-bold ${b.suplente === query || (b.suplente && !isExact) ? 'text-green-700' : (statusStyle[b.situacionRevista] || 'text-slate-600')}`}>
+                      {b.suplente === query || (b.suplente && !isExact) ? 'Suplente' : b.situacionRevista}
+                    </span>
+                  </td>
                   <td><Pencil className="size-4 text-slate-400" /></td>
                 </tr>
               ))}
@@ -738,9 +638,15 @@ function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias
 
       {selected !== 'Todos los docentes' && ausenciasDelDocente.length > 0 && (
         <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden mt-2">
-          <div className="border-b p-4 bg-red-50/50">
-            <h3 className="font-black text-base text-red-900">Ausencias y Coberturas Registradas</h3>
-            <p className="text-xs text-slate-500">Historial de faltas o suplencias por decreto de este docente.</p>
+          <div className="border-b p-4 bg-red-50/50 flex flex-wrap gap-4 justify-between items-center">
+            <div>
+              <h3 className="font-black text-base text-red-900">Ausencias y Coberturas Registradas</h3>
+              <p className="text-xs text-slate-500">Historial de faltas o suplencias por decreto de este docente.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')} className="bg-white">
+              <ArrowDownUp className="size-4 mr-2" />
+              {sortOrder === 'desc' ? 'Más recientes primero' : 'Más antiguas primero'}
+            </Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
@@ -754,7 +660,7 @@ function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias
                     <td className="font-bold text-[#0b5c46]">{a.curso}</td>
                     <td>{a.materia}</td>
                     <td>
-                      {a.docenteAusente === selected ? (
+                      {isExact && a.docenteAusente === query ? (
                         <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-full text-xs border border-red-200">Ausente</span>
                       ) : (
                         <span className="text-green-700 font-bold bg-green-50 px-2 py-1 rounded-full text-xs border border-green-200">Cubre por Decreto</span>
@@ -768,7 +674,6 @@ function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias
           </div>
         </div>
       )}
-
     </section>
   </div> 
 }
@@ -779,6 +684,11 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
   const [modoFecha, setModoFecha] = useState<'todo' | 'rango'>('todo')
   const [fechaDesde, setFechaDesde] = useState('2026-04-01')
   const [fechaHasta, setFechaHasta] = useState('2026-12-31')
+  
+  // Controles de Vista
+  const [viewMode, setViewMode] = useState<'lista' | 'calendario'>('lista')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [calendarDate, setCalendarDate] = useState(new Date())
 
   const [fechaInput, setFechaInput] = useState(new Date().toISOString().split('T')[0])
   const [claseSeleccionada, setClaseSeleccionada] = useState<string>('manual')
@@ -787,19 +697,16 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
   const [estadoCob, setEstadoCob] = useState<CoberturaStatus>('Sin cubrir')
   const [docenteDecreto, setDocenteDecreto] = useState('')
 
-  // Día de la semana según fechaInput
   const nombreDiaSemana = useMemo(() => {
     const d = new Date(fechaInput + 'T00:00:00')
     const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
     return days[d.getDay()] || 'Lunes'
   }, [fechaInput])
 
-  // Opciones de clases para ese curso y día
   const opcionesDelDia = useMemo(() => {
     return blocks.filter((b: Block) => b.curso === (cursoFiltro === 'Todos' ? courses[0] : cursoFiltro) && b.dia === nombreDiaSemana && b.tipo !== 'Recreo')
   }, [blocks, cursoFiltro, nombreDiaSemana, courses])
 
-  // Autocompletar cuando elige una clase
   useEffect(() => {
     if (claseSeleccionada !== 'manual') {
       const block = blocks.find((b: Block) => b.id === claseSeleccionada)
@@ -810,49 +717,57 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
     }
   }, [claseSeleccionada, blocks])
 
-  // FILTRO Y ORDENAMIENTO CRONOLÓGICO DE LA TABLA
+  // FILTRADO GLOBAL DE AUSENCIAS 
   const ausenciasFiltradas = ausencias.filter((a: AusenciaRecord) => {
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
     const matchDocente = !docenteFiltro || a.docenteAusente.toLowerCase().includes(docenteFiltro.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(docenteFiltro.toLowerCase())
-    
     let matchFecha = true
     if (modoFecha === 'rango' && a.fecha && a.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
       matchFecha = a.fecha >= fechaDesde && a.fecha <= fechaHasta
     }
     return matchCurso && matchDocente && matchFecha
-  }).sort((a: AusenciaRecord, b: AusenciaRecord) => {
-    return (b.fecha || '').localeCompare(a.fecha || '')
+  })
+
+  // PARA LA TABLA (Ordenadas)
+  const ausenciasParaTabla = [...ausenciasFiltradas].sort((a: AusenciaRecord, b: AusenciaRecord) => {
+    if (sortOrder === 'desc') return (b.fecha || '').localeCompare(a.fecha || '')
+    return (a.fecha || '').localeCompare(b.fecha || '')
   })
 
   const totalAusencias = ausenciasFiltradas.length
   const cubiertas = ausenciasFiltradas.filter((a: AusenciaRecord) => a.estadoCobertura === 'Cubierto por Decreto').length
-  const sinCubrir = totalAusencias - cubiertas
 
   function registrarAusencia(e: React.FormEvent) {
     e.preventDefault()
     if (!docenteInput || !cursoFiltro) return
     const nueva: AusenciaRecord = {
       id: `AUS-${Date.now().toString().slice(-4)}`,
-      curso: cursoFiltro === 'Todos' ? (courses[0] || '1°1°') : cursoFiltro,
-      mes: 'Octubre',
-      fecha: fechaInput,
-      materia: materiaInput || 'Materia general',
-      docenteAusente: docenteInput.toUpperCase(),
-      estadoCobertura: estadoCob,
+      curso: cursoFiltro === 'Todos' ? courses[0] : cursoFiltro,
+      mes: 'Octubre', fecha: fechaInput, materia: materiaInput || 'Materia general',
+      docenteAusente: docenteInput.toUpperCase(), estadoCobertura: estadoCob,
       docenteDecreto: estadoCob === 'Cubierto por Decreto' ? (docenteDecreto.toUpperCase() || 'CUBIERTO') : 'Sin cubrir'
     }
     setAusencias([nueva, ...ausencias])
     setDirty((n: number) => n + 1)
-    setDocenteInput('')
-    setDocenteDecreto('')
-    setClaseSeleccionada('manual')
+    setDocenteInput(''); setDocenteDecreto(''); setClaseSeleccionada('manual')
   }
+
+  // LOGICA DEL CALENDARIO
+  const calYear = calendarDate.getFullYear()
+  const calMonth = calendarDate.getMonth()
+  const monthNames = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
+  const firstDayRaw = new Date(calYear, calMonth, 1).getDay()
+  const firstDay = firstDayRaw === 0 ? 6 : firstDayRaw - 1 // Ajusta a Lunes como primer día
+
+  function prevMonth() { setCalendarDate(new Date(calYear, calMonth - 1, 1)) }
+  function nextMonth() { setCalendarDate(new Date(calYear, calMonth + 1, 1)) }
 
   return <div className="flex flex-col gap-6">
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <Stat label="Ausencias en la selección" value={totalAusencias} icon={<UserX />} />
       <Stat label="Cubiertas por decreto" value={cubiertas} icon={<ShieldCheck />} />
-      <Stat label="Sin cubrir" value={sinCubrir} icon={<ShieldAlert />} />
+      <Stat label="Sin cubrir" value={totalAusencias - cubiertas} icon={<ShieldAlert />} />
     </div>
 
     <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-5 shadow-sm">
@@ -864,22 +779,19 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
             {courses.map((c: string) => <option key={c}>{c}</option>)}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Buscar por Docente (Ausente / Cubre)
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Buscar por Docente
           <input value={docenteFiltro} onChange={(e) => setDocenteFiltro(e.target.value)} placeholder="Ej. BOGARIN, ASPREA..." className="rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase" />
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Periodo de fechas
           <select value={modoFecha} onChange={(e) => setModoFecha(e.target.value as any)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold">
-            <option value="todo">Todo el historial</option>
-            <option value="rango">Desde / Hasta específico</option>
+            <option value="todo">Todo el historial</option><option value="rango">Desde / Hasta específico</option>
           </select>
         </label>
-        {modoFecha === 'rango' ? (
+        {modoFecha === 'rango' && (
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-600">Desde <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" /></label>
             <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-600">Hasta <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" /></label>
           </div>
-        ) : (
-          <div className="flex items-end pb-1"><span className="text-xs text-slate-400 font-medium">Historial completo sin límite de fecha.</span></div>
         )}
       </div>
     </div>
@@ -887,7 +799,6 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
     <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-5 shadow-sm">
       <h3 className="mb-4 font-black text-lg text-[#0b5c46]">Registrar nueva ausencia docente</h3>
       <form onSubmit={registrarAusencia} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Curso
           <select value={cursoFiltro === 'Todos' ? (courses[0] || '1°1°') : cursoFiltro} onChange={(e) => setCursoFiltro(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]">
             {courses.map((c: string) => <option key={c}>{c}</option>)}
@@ -896,17 +807,12 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Fecha
           <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" />
         </label>
-        
-        {/* NUEVO SELECTOR INTELIGENTE */}
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-2 lg:col-span-4">Clase programada ({nombreDiaSemana})
           <select value={claseSeleccionada} onChange={(e) => setClaseSeleccionada(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-[#0b5c46] outline-none focus:ring-2 focus:ring-[#0b5c46] bg-slate-50">
             <option value="manual">-- Ingreso manual libre --</option>
-            {opcionesDelDia.map((b: Block) => (
-              <option key={b.id} value={b.id}>{b.horario} hs | {b.materia} ({b.suplente || b.docente})</option>
-            ))}
+            {opcionesDelDia.map((b: Block) => <option key={b.id} value={b.id}>{b.horario} hs | {b.materia} ({b.suplente || b.docente})</option>)}
           </select>
         </label>
-
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-2">Docente ausente
           <input value={docenteInput} onChange={(e) => setDocenteInput(e.target.value)} placeholder="Ej. BOGARIN" className="rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase" required />
         </label>
@@ -915,8 +821,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-2">Estado de Cobertura
           <select value={estadoCob} onChange={(e) => setEstadoCob(e.target.value as CoberturaStatus)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#0b5c46]">
-            <option value="Sin cubrir">Sin cubrir</option>
-            <option value="Cubierto por Decreto">Cubierto por Decreto</option>
+            <option value="Sin cubrir">Sin cubrir</option><option value="Cubierto por Decreto">Cubierto por Decreto</option>
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-4">Profesor que cubre / Obs.
@@ -928,40 +833,94 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
       </form>
     </div>
 
-    <div className="overflow-hidden rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm">
-      <div className="border-b border-white/20 p-4 flex items-center justify-between">
+    <div className="overflow-hidden rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm flex flex-col">
+      <div className="border-b border-white/20 p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h3 className="font-black text-lg text-[#0b5c46]">Historial de ausencias y cobertura</h3>
           <p className="text-xs text-slate-500">Mostrando {ausenciasFiltradas.length} registros según los filtros seleccionados</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {viewMode === 'lista' && (
+            <Button variant="outline" size="sm" onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')} className="bg-white">
+              <ArrowDownUp className="size-4 mr-1.5" />
+              {sortOrder === 'desc' ? 'Más recientes' : 'Más antiguas'}
+            </Button>
+          )}
+          <div className="bg-slate-100 p-1 rounded-lg flex border border-slate-200">
+            <button onClick={() => setViewMode('lista')} className={`px-3 py-1.5 text-xs font-bold rounded-md flex items-center gap-1.5 ${viewMode === 'lista' ? 'bg-white shadow-sm text-[#0b5c46]' : 'text-slate-500 hover:text-slate-700'}`}>
+              <ListFilter className="size-3.5" /> Lista
+            </button>
+            <button onClick={() => setViewMode('calendario')} className={`px-3 py-1.5 text-xs font-bold rounded-md flex items-center gap-1.5 ${viewMode === 'calendario' ? 'bg-white shadow-sm text-[#0b5c46]' : 'text-slate-500 hover:text-slate-700'}`}>
+              <CalendarDays className="size-3.5" /> Calendario
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] text-left text-sm">
-          <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
-            <tr><th className="p-3">Curso</th><th>Fecha</th><th>Docente ausente</th><th>Materia</th><th>Estado</th><th>Cubre por decreto / Observación</th></tr>
-          </thead>
-          <tbody>
-            {ausenciasFiltradas.length === 0 ? (
-              <tr><td colSpan={6} className="p-6 text-center text-slate-400 font-semibold">No se encontraron ausencias con los filtros seleccionados.</td></tr>
-            ) : (
-              ausenciasFiltradas.map((a: AusenciaRecord) => (
-                <tr key={a.id} className="border-t border-slate-100 hover:bg-[#f4faed]">
-                  <td className="p-3 font-bold">{a.curso}</td>
-                  <td>{a.fecha}</td>
-                  <td className="font-black text-slate-800">{a.docenteAusente}</td>
-                  <td className="font-bold text-[#1b5014]">{a.materia}</td>
-                  <td>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold shadow-sm border ${a.estadoCobertura === 'Cubierto por Decreto' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                      {a.estadoCobertura}
-                    </span>
-                  </td>
-                  <td className="font-bold text-slate-700">{a.docenteDecreto}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+
+      {viewMode === 'lista' ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[850px] text-left text-sm">
+            <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
+              <tr><th className="p-3">Curso</th><th>Fecha</th><th>Docente ausente</th><th>Materia</th><th>Estado</th><th>Cubre por decreto / Observación</th></tr>
+            </thead>
+            <tbody>
+              {ausenciasParaTabla.length === 0 ? (
+                <tr><td colSpan={6} className="p-6 text-center text-slate-400 font-semibold">No se encontraron ausencias con los filtros seleccionados.</td></tr>
+              ) : (
+                ausenciasParaTabla.map((a: AusenciaRecord) => (
+                  <tr key={a.id} className="border-t border-slate-100 hover:bg-[#f4faed]">
+                    <td className="p-3 font-bold">{a.curso}</td><td>{a.fecha}</td><td className="font-black text-slate-800">{a.docenteAusente}</td><td className="font-bold text-[#1b5014]">{a.materia}</td>
+                    <td><span className={`rounded-full px-2.5 py-1 text-xs font-bold shadow-sm border ${a.estadoCobertura === 'Cubierto por Decreto' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-100'}`}>{a.estadoCobertura}</span></td>
+                    <td className="font-bold text-slate-700">{a.docenteDecreto}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="p-4 sm:p-6 bg-slate-50/50">
+          <div className="flex items-center justify-between mb-6">
+            <Button variant="outline" onClick={prevMonth} className="bg-white px-3 font-black text-lg">{'<'}</Button>
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight">{monthNames[calMonth]}</h2>
+              <p className="text-lg font-bold text-red-600 leading-none">{calYear}</p>
+            </div>
+            <Button variant="outline" onClick={nextMonth} className="bg-white px-3 font-black text-lg">{'>'}</Button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <div className="min-w-[700px] grid grid-cols-7 border border-[#2c3e50] rounded-xl overflow-hidden bg-white shadow-sm">
+              {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => (
+                <div key={d} className="bg-[#2c3e50] text-white text-center py-2.5 text-xs font-bold tracking-wider">{d}</div>
+              ))}
+              
+              {Array.from({ length: firstDay }).map((_, i) => <div key={`blank-${i}`} className="border-b border-r border-slate-200 bg-slate-50 min-h-[120px]" />)}
+              
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayAbsences = ausenciasFiltradas.filter(a => a.fecha === dateStr);
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+
+                return (
+                  <div key={day} className="border-b border-r border-slate-200 p-2 min-h-[120px] flex flex-col hover:bg-slate-50 transition">
+                    <span className={`text-sm font-black mb-1 ${isToday ? 'text-blue-600' : 'text-slate-800'}`}>{day}</span>
+                    <div className="flex flex-col gap-1.5 overflow-y-auto flex-1 h-0 scrollbar-none">
+                      {dayAbsences.map(a => (
+                        <div key={a.id} className="text-[9px] leading-tight bg-red-50 text-red-700 p-1.5 rounded-md border border-red-100 font-bold shadow-sm uppercase flex flex-col gap-0.5">
+                          <span className="text-[8px] bg-red-200/50 w-fit px-1 rounded-sm text-red-800">{a.curso}</span>
+                          <span className="line-clamp-2">{a.docenteAusente}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 }
