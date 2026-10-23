@@ -489,7 +489,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
               ))
             ))}
 
-            {/* Recreos (Tiras de fondo amarillo) */}
+            {/* Recreos (Tiras de fondo amarillo intenso y texto oscuro) */}
             {recreos.map(r => {
                const m = r.horario.match(timePattern);
                if (!m) return null;
@@ -498,20 +498,36 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                if (startIdx === -1 || endIdx === -1) return null;
                
                return (
-                 <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#ffb700] z-0 flex items-center justify-center border-b border-[#e0a200] opacity-25 cursor-pointer">
-                   <span className="text-xs font-black uppercase tracking-[0.5em] text-[#866500]">RECREO</span>
+                 <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#ffeaa7] z-0 flex items-center justify-center border-b border-[#f39c12] cursor-pointer shadow-sm">
+                   <span className="text-xs font-black uppercase tracking-[0.5em] text-[#d35400]">RECREO</span>
                  </div>
                )
             })}
 
-            {/* Etiquetas de Tiempo (Eje Y) */}
+            {/* Etiquetas de Tiempo (Eje Y) SIN RECREOS AUTOMÁTICOS */}
             {boundaries.slice(0, -1).map((start, rIdx) => {
               const end = boundaries[rIdx + 1];
-              const dur = timeToMins(end) - timeToMins(start);
-              const isBreak = dur <= 15;
+              
+              // Verificamos si el usuario colocó un recreo explícito en este horario exacto
+              const isExplicitRecreo = recreos.some(r => {
+                 const m = r.horario.match(timePattern);
+                 return m && m[1].padStart(5, '0') === start && m[2].padStart(5, '0') === end;
+              });
+
               return (
                 <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className="border-r border-b border-slate-200 bg-white flex flex-col items-center justify-center p-1 text-[10px] sm:text-[11px] font-mono font-extrabold text-slate-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-20">
-                  {isBreak ? <span className="text-[#ffb700]">RECREO</span> : <><span>{start}</span><span className="text-slate-400 font-medium text-[9px]">{end}</span></>}
+                  {isExplicitRecreo ? (
+                    <>
+                      <span className="text-[#d35400] tracking-widest text-[8px] mb-0.5">RECREO</span>
+                      <span className="text-[#d35400] leading-none">{start}</span>
+                      <span className="text-[#f39c12] font-medium text-[9px] leading-none mt-0.5">{end}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{start}</span>
+                      <span className="text-slate-400 font-medium text-[9px] mt-0.5">{end}</span>
+                    </>
+                  )}
                 </div>
               )
             })}
@@ -594,8 +610,8 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
           {recreosActuales.length === 0 ? <p className="text-sm text-slate-400 italic py-2">Sin recreos.</p> : (
             <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto">
               {recreosActuales.map((r: Block) => (
-                <div key={r.id} className="flex items-center justify-between rounded-xl border border-[#ffb700]/50 bg-[#fff8d8] px-3 py-2">
-                  <span className="font-mono font-bold text-sm text-[#866500]">{r.horario}</span>
+                <div key={r.id} className="flex items-center justify-between rounded-xl border border-[#f39c12]/50 bg-[#ffeaa7] px-3 py-2">
+                  <span className="font-mono font-bold text-sm text-[#d35400]">{r.horario}</span>
                   <Button variant="ghost" size="sm" onClick={() => eliminarRecreo(r.id)} className="text-red-600 hover:text-red-700 h-8 px-2"><Trash2 className="size-4" /></Button>
                 </div>
               ))}
