@@ -95,7 +95,16 @@ export default function Page() {
   }, [blocks, course])
 
   const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
-  const teachers = useMemo(() => [...new Set(blocks.flatMap((b: Block) => [b.docente, b.suplente].filter(Boolean)))], [blocks])
+  
+  // ORDEN ALFABÉTICO Y COMBINACIÓN DE DOCENTES DE HORARIOS Y AUSENCIAS
+  const teachers = useMemo(() => {
+    const allTeachers = [
+      ...blocks.flatMap((b: Block) => [b.docente, b.suplente]),
+      ...ausencias.flatMap((a: AusenciaRecord) => [a.docenteAusente, a.docenteDecreto])
+    ].filter(Boolean);
+    return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
+  }, [blocks, ausencias])
+
   const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
   const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
@@ -289,8 +298,8 @@ export default function Page() {
           </div>
 
           {view === 'horario' && <ScheduleView course={course} setCourse={setCourse} filter={filter} setFilter={setFilter} selectedDays={selectedDays} setSelectedDays={setSelectedDays} visible={visible} blocks={blocks} setBlocks={setBlocks} courses={courses} preceptores={preceptores} setEditing={setEditing} onAdd={() => setEditing({ id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–08:40', materia: 'Nueva materia', docente: '', situacionRevista: 'Titular' })} onManageRecreos={() => setShowRecreosModal(true)} />}
-          {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} results={searchResults} setEditing={setEditing} />}
-          {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} />}
+          {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} results={searchResults} setEditing={setEditing} ausencias={ausencias} />}
+          {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} blocks={blocks} />}
           {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
           {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
         </main>
@@ -333,13 +342,11 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
   }
 
   // USO DE MINMAX PARA EVITAR RECORTES:
-  // En lugar de forzar una altura máxima, usamos minmax() para permitir 
-  // que la fila se expanda automáticamente si el texto del cuadro lo requiere.
+  // Se usa minmax(altura_ideal, auto) para que si el texto es muy largo la caja se expanda sola hacia abajo
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
-    // Base dinámica según duración, pero se autoexpande si hace falta (auto)
-    return `minmax(${Math.max(dur * 1.5, 45)}px, auto)`; 
+    return `minmax(${Math.max(dur * 1.1, 40)}px, auto)`; 
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -459,7 +466,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-[#0052cc]" label="Titular" />
         <Legend color="bg-[#cc0000]" label="Provisional" />
         <Legend color="bg-slate-900" label="Titular interino" />
-        <Legend color="bg-[#1b5e20]" label="Suplente" />
+        <Legend color="bg-[#0b5c46]" label="Suplente" />
       </div>
       <span className="text-slate-600">Doble clic en los cuadrados para editarlos</span>
     </div>
@@ -558,7 +565,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                       </>
                     ) : (
                       <>
-                        <span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
+                        <span className="text-[#0b5c46] text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
                         <span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span>
                       </>
                     )}
@@ -651,23 +658,26 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border p-1.5 sm:p-2 flex flex-col w-full h-full relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] ${block.tipo === 'Teoría' ? 'border-[#8ebf42]/40 border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-slate-300 border-l-slate-400 bg-slate-100'}`}>
-    <div className="flex flex-col gap-0.5 items-start w-full">
-      {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
-      <p className={`text-[10.5px] sm:text-[11px] font-black uppercase tracking-tight break-words whitespace-normal w-full leading-[1.1] text-[#0b5c46]`}>{block.materia}</p>
-    </div>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-2 sm:p-2.5 flex flex-col w-full h-full relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-l-slate-400 bg-slate-100'}`}>
     
-    <div className="mt-auto pt-1">
-      <div className="flex flex-col">
-        {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[11.5px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[9px] text-slate-400 font-bold uppercase">Sin docente</span>}
-        <span className="text-[7.5px] sm:text-[9px] font-mono font-bold text-slate-500 mt-0.5">{block.horario}</span>
+    <div className="flex flex-col gap-1 items-start w-full">
+      {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
+      
+      <p className={`text-[10px] sm:text-[11px] font-black uppercase tracking-tight break-words whitespace-normal w-full leading-tight text-[#0b5c46]`}>{block.materia}</p>
+      
+      <div className="flex flex-col mt-0.5">
+        {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[11.5px] font-black uppercase leading-tight break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
+        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-slate-400 mt-0.5">{block.horario}</span>
       </div>
     </div>
 
     {block.suplente && (
-      <div className="mt-1">
-        <div className="inline-block rounded-md bg-[#e8f5e9] px-1.5 py-0.5 text-[8.5px] sm:text-[10px] font-bold text-[#1b5e20] border border-[#c8e6c9] break-words uppercase leading-tight">
-          Sup: {block.suplente}
+      <div className="mt-1.5 inline-block w-fit rounded-full bg-[#dcfce7] px-2 py-0.5 border border-[#86efac]">
+        <span className="text-[8px] sm:text-[9px] font-bold text-[#166534] uppercase leading-tight block text-center">
+          Suplente
+        </span>
+        <div className="text-[9px] sm:text-[10px] font-black text-[#14532d] uppercase mt-0.5 break-words whitespace-normal leading-tight text-center">
+          {block.suplente}
         </div>
       </div>
     )}
@@ -678,18 +688,22 @@ function Legend({ color, label }: { color: string; label: string }) {
   return <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/90 px-2 py-1 shadow-sm"><span className={`size-2 rounded-full ${color}`} />{label}</span> 
 }
 
-function TeacherView({ query, setQuery, teachers, results, setEditing }: any) { 
+function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias }: any) { 
   const [status, setStatus] = useState('Todos')
   const filtered = results.filter((b: Block) => status === 'Todos' || (status === 'Suplentes' ? b.suplente?.toLowerCase().includes(query.toLowerCase()) : b.situacionRevista === status))
   const selected = query ? query : 'Todos los docentes' 
+
+  // Filtrar las ausencias o coberturas donde aparece este docente específico
+  const ausenciasDelDocente = ausencias.filter((a: AusenciaRecord) => a.docenteAusente === selected || a.docenteDecreto === selected)
+
   return <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
-    <aside className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 shadow-sm">
+    <aside className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 shadow-sm h-fit">
       <p className="mb-2 text-sm font-black text-[#0b5c46]">Buscar docente</p>
       <div className="relative">
         <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nombre o apellido..." className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" />
       </div>
-      <div className="mt-3 flex flex-col gap-1 max-h-[300px] sm:max-h-[400px] overflow-y-auto">
+      <div className="mt-3 flex flex-col gap-1 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-1">
         {teachers.filter((t: string) => t.toLowerCase().includes(query.toLowerCase())).map((t: string) => (
           <button key={t} onClick={() => setQuery(t)} className="flex items-center justify-between rounded-lg px-2 py-2 text-left text-sm font-semibold hover:bg-[#f4faed]">{t}<ChevronDown className="size-3 -rotate-90 text-slate-400" /></button>
         ))}
@@ -702,11 +716,12 @@ function TeacherView({ query, setQuery, teachers, results, setEditing }: any) {
         <Stat label="Como titular" value={filtered.filter((b: Block) => b.docente === selected && b.situacionRevista === 'Titular').length} icon={<ShieldCheck />} />
         <Stat label="Como suplente" value={filtered.filter((b: Block) => b.suplente === selected).length} icon={<Check />} />
       </div>
+      
       <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
           <div>
             <h3 className="font-black text-lg text-[#0b5c46]">{selected}</h3>
-            <p className="text-xs text-slate-500">{filtered.length} bloques encontrados</p>
+            <p className="text-xs text-slate-500">{filtered.length} bloques encontrados en el horario semanal</p>
           </div>
           <div className="flex flex-wrap gap-1">
             {['Todos', 'Titular', 'Provisional', 'Titular Interino', 'Suplentes'].map((x) => (
@@ -734,22 +749,80 @@ function TeacherView({ query, setQuery, teachers, results, setEditing }: any) {
           </table>
         </div>
       </div>
+
+      {selected !== 'Todos los docentes' && ausenciasDelDocente.length > 0 && (
+        <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden mt-2">
+          <div className="border-b p-4 bg-red-50/50">
+            <h3 className="font-black text-base text-red-900">Ausencias y Coberturas Registradas</h3>
+            <p className="text-xs text-slate-500">Historial de faltas o suplencias por decreto de este docente.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-red-900/10 text-xs uppercase tracking-wider text-red-900">
+                <tr><th className="p-3">Fecha</th><th>Curso</th><th>Materia</th><th>Rol en el registro</th><th>Estado de cobertura</th></tr>
+              </thead>
+              <tbody>
+                {ausenciasDelDocente.map((a: AusenciaRecord) => (
+                  <tr key={a.id} className="border-t border-slate-100 hover:bg-slate-50 transition">
+                    <td className="p-3 font-bold">{a.fecha}</td>
+                    <td className="font-bold text-[#0b5c46]">{a.curso}</td>
+                    <td>{a.materia}</td>
+                    <td>
+                      {a.docenteAusente === selected ? (
+                        <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-full text-xs border border-red-200">Ausente</span>
+                      ) : (
+                        <span className="text-green-700 font-bold bg-green-50 px-2 py-1 rounded-full text-xs border border-green-200">Cubre por Decreto</span>
+                      )}
+                    </td>
+                    <td><span className={`text-xs font-bold ${a.estadoCobertura === 'Cubierto por Decreto' ? 'text-green-700' : 'text-red-700'}`}>{a.estadoCobertura}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
     </section>
   </div> 
 }
 
-function AusenciasView({ ausencias, setAusencias, setDirty, courses }: any) {
+function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: any) {
   const [cursoFiltro, setCursoFiltro] = useState('Todos')
   const [docenteFiltro, setDocenteFiltro] = useState('')
   const [modoFecha, setModoFecha] = useState<'todo' | 'rango'>('todo')
   const [fechaDesde, setFechaDesde] = useState('2026-04-01')
   const [fechaHasta, setFechaHasta] = useState('2026-12-31')
 
+  const [fechaInput, setFechaInput] = useState(new Date().toISOString().split('T')[0])
+  const [claseSeleccionada, setClaseSeleccionada] = useState<string>('manual')
   const [docenteInput, setDocenteInput] = useState('')
   const [materiaInput, setMateriaInput] = useState('')
-  const [fechaInput, setFechaInput] = useState(new Date().toISOString().split('T')[0])
   const [estadoCob, setEstadoCob] = useState<CoberturaStatus>('Sin cubrir')
   const [docenteDecreto, setDocenteDecreto] = useState('')
+
+  // Día de la semana según fechaInput
+  const nombreDiaSemana = useMemo(() => {
+    const d = new Date(fechaInput + 'T00:00:00')
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    return days[d.getDay()] || 'Lunes'
+  }, [fechaInput])
+
+  // Opciones de clases para ese curso y día
+  const opcionesDelDia = useMemo(() => {
+    return blocks.filter((b: Block) => b.curso === (cursoFiltro === 'Todos' ? courses[0] : cursoFiltro) && b.dia === nombreDiaSemana && b.tipo !== 'Recreo')
+  }, [blocks, cursoFiltro, nombreDiaSemana, courses])
+
+  // Autocompletar cuando elige una clase
+  useEffect(() => {
+    if (claseSeleccionada !== 'manual') {
+      const block = blocks.find((b: Block) => b.id === claseSeleccionada)
+      if (block) {
+        setDocenteInput(block.suplente || block.docente)
+        setMateriaInput(block.materia)
+      }
+    }
+  }, [claseSeleccionada, blocks])
 
   const ausenciasFiltradas = ausencias.filter((a: AusenciaRecord) => {
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
@@ -783,6 +856,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses }: any) {
     setDirty((n: number) => n + 1)
     setDocenteInput('')
     setDocenteDecreto('')
+    setClaseSeleccionada('manual')
   }
 
   return <div className="flex flex-col gap-6">
@@ -824,31 +898,43 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses }: any) {
     <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-5 shadow-sm">
       <h3 className="mb-4 font-black text-lg text-[#0b5c46]">Registrar nueva ausencia docente</h3>
       <form onSubmit={registrarAusencia} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Curso
-          <select value={cursoFiltro === 'Todos' ? (courses[0] || '1°1°') : cursoFiltro} onChange={(e) => setCursoFiltro(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+          <select value={cursoFiltro === 'Todos' ? (courses[0] || '1°1°') : cursoFiltro} onChange={(e) => setCursoFiltro(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]">
             {courses.map((c: string) => <option key={c}>{c}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Fecha
-          <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+          <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Docente ausente
+        
+        {/* NUEVO SELECTOR INTELIGENTE */}
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-2 lg:col-span-4">Clase programada ({nombreDiaSemana})
+          <select value={claseSeleccionada} onChange={(e) => setClaseSeleccionada(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-[#0b5c46] outline-none focus:ring-2 focus:ring-[#0b5c46] bg-slate-50">
+            <option value="manual">-- Ingreso manual libre --</option>
+            {opcionesDelDia.map((b: Block) => (
+              <option key={b.id} value={b.id}>{b.horario} hs | {b.materia} ({b.suplente || b.docente})</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-2">Docente ausente
           <input value={docenteInput} onChange={(e) => setDocenteInput(e.target.value)} placeholder="Ej. BOGARIN" className="rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase" required />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Materia
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-2">Materia
           <input value={materiaInput} onChange={(e) => setMateriaInput(e.target.value)} placeholder="Ej. Matemática" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Estado de Cobertura
-          <select value={estadoCob} onChange={(e) => setEstadoCob(e.target.value as CoberturaStatus)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold">
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-2">Estado de Cobertura
+          <select value={estadoCob} onChange={(e) => setEstadoCob(e.target.value as CoberturaStatus)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#0b5c46]">
             <option value="Sin cubrir">Sin cubrir</option>
             <option value="Cubierto por Decreto">Cubierto por Decreto</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Profesor que cubre / Obs.
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-600 sm:col-span-1 lg:col-span-4">Profesor que cubre / Obs.
           <input value={docenteDecreto} onChange={(e) => setDocenteDecreto(e.target.value)} placeholder="Ej. ASPREA" disabled={estadoCob === 'Sin cubrir'} className="rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase disabled:bg-slate-100" />
         </label>
-        <div className="sm:col-span-2 lg:col-span-6 flex justify-end">
-          <Button type="submit" className="bg-[#0b5c46] text-white hover:bg-[#074030] w-full sm:w-auto shadow-md">Registrar ausencia</Button>
+        <div className="sm:col-span-2 lg:col-span-2 flex items-end justify-end">
+          <Button type="submit" className="bg-[#0b5c46] text-white hover:bg-[#074030] w-full shadow-md h-[38px]">Registrar ausencia</Button>
         </div>
       </form>
     </div>
