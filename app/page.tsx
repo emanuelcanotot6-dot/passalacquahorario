@@ -629,17 +629,17 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-blue-800' : block.situacionRevista === 'Provisional' ? 'text-red-700' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border-2 p-2 sm:p-2.5 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition ${block.tipo === 'Teoría' ? 'border-[#8ebf42] bg-[#eef8e1] text-[#1b5014]' : 'border-slate-300 bg-slate-100 text-slate-800'}`}>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border-2 p-1.5 sm:p-2.5 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition ${block.tipo === 'Teoría' ? 'border-[#8ebf42] bg-[#eef8e1] text-[#1b5014]' : 'border-slate-300 bg-slate-100 text-slate-800'}`}>
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="mb-1 flex items-start justify-between gap-1">
-        <p className="text-[11px] sm:text-xs font-extrabold leading-tight line-clamp-3">{block.materia}</p>
-        {block.grupo && <span className="rounded bg-[#168000] px-1.5 py-0.5 text-[9px] font-black text-white shrink-0">{block.grupo}</span>}
+      <div className="mb-1 flex flex-col gap-1.5 items-start w-full">
+        {block.grupo && <span className="rounded bg-[#168000] px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black text-white shrink-0 shadow-sm">{block.grupo}</span>}
+        <p className="text-[10px] sm:text-xs font-extrabold leading-tight break-words whitespace-normal w-full">{block.materia}</p>
       </div>
       
-      <div className="mt-auto pt-1">
+      <div className="mt-auto pt-1 border-t border-black/5">
         <div className="flex flex-col">
-          {block.docente ? <span className={`${statusColorClass} text-xs sm:text-[13px] font-black leading-tight line-clamp-2`}>{block.docente}</span> : <span className="text-xs text-slate-400 font-bold">Sin docente</span>}
-          <span className="text-[10px] sm:text-[11px] font-mono font-bold opacity-70 mt-0.5">{block.horario}</span>
+          {block.docente ? <span className={`${statusColorClass} text-xs sm:text-[13px] font-black leading-tight line-clamp-2 break-words`}>{block.docente}</span> : <span className="text-xs text-slate-400 font-bold">Sin docente</span>}
+          <span className="text-[9px] sm:text-[10px] font-mono font-bold opacity-70 mt-0.5">{block.horario}</span>
         </div>
       </div>
     </div>
