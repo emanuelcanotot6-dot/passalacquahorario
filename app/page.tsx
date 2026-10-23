@@ -474,7 +474,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
 
       <div className="min-w-[850px] pb-4">
         {boundaries.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: `90px repeat(${selectedDays.length}, minmax(140px, 1fr))`, gridTemplateRows: `40px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-[#fbfdf9] rounded-xl overflow-hidden relative">
+          <div style={{ display: 'grid', gridTemplateColumns: `100px repeat(${selectedDays.length}, minmax(140px, 1fr))`, gridTemplateRows: `40px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-[#fbfdf9] rounded-xl overflow-hidden relative">
             
             {/* Cabeceras de Días */}
             <div className="border-r border-b border-slate-200 bg-[#f4faed] p-2 flex items-center justify-center font-extrabold text-[#267018] text-[10px] uppercase tracking-widest">HORARIO</div>
@@ -515,17 +515,17 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
               });
 
               return (
-                <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className="border-r border-b border-slate-200 bg-white flex flex-col items-center justify-center p-1 text-[10px] sm:text-[11px] font-mono font-extrabold text-slate-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-20">
+                <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className="border-r border-b border-slate-200 bg-white flex flex-col items-center justify-center p-2 font-mono shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-20">
                   {isExplicitRecreo ? (
                     <>
-                      <span className="text-[#d35400] tracking-widest text-[8px] mb-0.5">RECREO</span>
-                      <span className="text-[#d35400] leading-none">{start}</span>
-                      <span className="text-[#f39c12] font-medium text-[9px] leading-none mt-0.5">{end}</span>
+                      <span className="text-[#d35400] tracking-widest text-[9px] sm:text-[10px] mb-1 font-bold">RECREO</span>
+                      <span className="text-[#d35400] text-sm sm:text-base font-black leading-none">{start}</span>
+                      <span className="text-[#f39c12] font-bold text-[10px] sm:text-xs leading-none mt-1">{end}</span>
                     </>
                   ) : (
                     <>
-                      <span>{start}</span>
-                      <span className="text-slate-400 font-medium text-[9px] mt-0.5">{end}</span>
+                      <span className="text-slate-800 text-sm sm:text-base font-black leading-none">{start}</span>
+                      <span className="text-slate-500 font-bold text-[10px] sm:text-xs mt-1 leading-none">{end}</span>
                     </>
                   )}
                 </div>
