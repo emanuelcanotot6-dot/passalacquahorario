@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { toPng } from 'html-to-image'
 import { Button } from '@/components/ui/button'
-import { CalendarDays, Check, ChevronDown, Cloud, Download, ListFilter, Pencil, Printer, Search, ShieldAlert, ShieldCheck, UserCheck, UserX, Users, X, Zap, Clock, Trash2, Plus, Image as ImageIcon, FileSpreadsheet } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, Cloud, Download, ListFilter, Pencil, Printer, Search, ShieldAlert, ShieldCheck, UserCheck, UserX, Users, X, Zap, Clock, Trash2, Plus, Image as ImageIcon, FileSpreadsheet, Coffee } from 'lucide-react'
 
 type View = 'horario' | 'docentes' | 'ausencias' | 'preceptores' | 'paro'
 type Status = 'Titular' | 'Provisional' | 'Titular Interino'
@@ -66,7 +66,7 @@ const seedPreceptores: PreceptorAssignment[] = courses.map((c) => ({
   curso: c, preceptorTitular: '', preceptorSuplente: ''
 }))
 
-const statusStyle: Record<Status, string> = { Titular: 'text-blue-700 bg-blue-50 border-blue-200', Provisional: 'text-red-700 bg-red-50 border-red-200', 'Titular Interino': 'text-gray-950 bg-gray-100 border-gray-300' }
+const statusStyle: Record<Status, string> = { Titular: 'text-blue-700', Provisional: 'text-red-700', 'Titular Interino': 'text-slate-900' }
 
 export default function Page() {
   const [view, setView] = useState<View>('horario')
@@ -330,7 +330,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
-    return `${Math.max(dur * 1.8, 45)}px`; // Se subió un poco el alto mínimo para acomodar el texto extra
+    return `${Math.max(dur * 1.8, 45)}px`; // Altura base
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -408,7 +408,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     if (!tableRef.current) return
     setDownloadingImg(true)
     try {
-      const dataUrl = await toPng(tableRef.current, { cacheBust: true, backgroundColor: '#ffffff', quality: 0.95 })
+      const dataUrl = await toPng(tableRef.current, { cacheBust: true, quality: 1, pixelRatio: 2 })
       const link = document.createElement('a')
       link.download = `horario-curso-${course.replace('°', '').replace('°', '')}.png`
       link.href = dataUrl
@@ -444,132 +444,145 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Button className="bg-[#168000] text-white hover:bg-[#106500] flex-1 sm:flex-none" onClick={onAdd}><span className="text-lg leading-none">+</span> Agregar</Button>
       </div>
     </div>
-    
-    <div className="mb-4 flex flex-col sm:flex-row flex-wrap gap-2 text-xs font-semibold justify-between items-start sm:items-center print:hidden">
-      <div className="flex flex-wrap gap-2">
-        <Legend color="bg-blue-600" label="Titular" />
-        <Legend color="bg-red-600" label="Provisional" />
-        <Legend color="bg-gray-900" label="Titular interino" />
-        <Legend color="bg-green-600" label="Suplente" />
-      </div>
-      <span className="text-slate-500">Doble clic para editar</span>
-    </div>
 
-    <div ref={tableRef} className="overflow-x-auto rounded-2xl border border-[#d7e8c9] bg-white shadow-sm p-4 print:p-0 print:border-none print:shadow-none">
-      <div className="mb-4 flex items-center justify-between border-b pb-3">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Escudo E.E.S.T. N° 6" className="size-10 object-contain" />
-          <div>
-            <div className="text-[10px] font-extrabold uppercase tracking-widest text-[#168000]">E.E.S.T. N° 6 · Banfield</div>
-            <h3 className="text-sm font-black text-slate-900">Horario Escolar · Curso <span className="text-[#168000]">{course}</span></h3>
-          </div>
-        </div>
-        {preceptorDelCurso && (
-          <div className="text-right text-xs font-semibold text-slate-700">
-            <div>Preceptor Titular: <strong className="text-slate-900">{preceptorDelCurso.preceptorTitular || 'No asignado'}</strong></div>
-            {preceptorDelCurso.preceptorSuplente && <div>Suplente: <strong className="text-slate-900">{preceptorDelCurso.preceptorSuplente}</strong></div>}
-          </div>
-        )}
-      </div>
+    {/* ZONA DE DESCARGA CON FONDO INSTITUCIONAL */}
+    <div ref={tableRef} className="relative overflow-hidden shadow-2xl print:shadow-none bg-white max-w-full">
+      
+      {/* IMAGEN DE FONDO ABSOLUTA */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none" 
+        style={{ 
+          backgroundImage: "url('/fondo.jpg')", 
+          backgroundSize: 'cover', 
+          backgroundPosition: 'center' 
+        }} 
+      />
 
-      <div className="min-w-[850px] pb-4">
-        {boundaries.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: `100px repeat(${selectedDays.length}, minmax(140px, 1fr))`, gridTemplateRows: `40px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-[#fbfdf9] rounded-xl overflow-hidden relative">
-            
-            {/* Cabeceras de Días */}
-            <div className="border-r border-b border-slate-200 bg-[#f4faed] p-2 flex items-center justify-center font-extrabold text-[#267018] text-[10px] uppercase tracking-widest">HORARIO</div>
-            {selectedDays.map((d, i) => (
-              <div key={d} style={{ gridColumn: i + 2, gridRow: 1 }} className="border-r border-b border-slate-200 bg-[#f4faed] p-2 flex items-center justify-center font-extrabold text-[#267018] text-xs uppercase tracking-wider">{d}</div>
-            ))}
-
-            {/* Líneas de Grilla (Fondo) */}
-            {selectedDays.map((day, dIdx) => (
-              boundaries.slice(0, -1).map((_, rIdx) => (
-                <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100" />
-              ))
-            ))}
-
-            {/* Recreos (Tiras de fondo amarillo intenso y texto oscuro) */}
-            {recreos.map(r => {
-               const m = r.horario.match(timePattern);
-               if (!m) return null;
-               const startIdx = boundaries.indexOf(m[1].padStart(5, '0'));
-               const endIdx = boundaries.indexOf(m[2].padStart(5, '0'));
-               if (startIdx === -1 || endIdx === -1) return null;
-               
-               return (
-                 <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#ffeaa7] z-0 flex items-center justify-center border-b border-[#f39c12] cursor-pointer shadow-sm">
-                   <span className="text-xs font-black uppercase tracking-[0.5em] text-[#d35400]">RECREO</span>
-                 </div>
-               )
-            })}
-
-            {/* Etiquetas de Tiempo (Eje Y) SIN RECREOS AUTOMÁTICOS */}
-            {boundaries.slice(0, -1).map((start, rIdx) => {
-              const end = boundaries[rIdx + 1];
-              
-              // Verificamos si el usuario colocó un recreo explícito en este horario exacto
-              const isExplicitRecreo = recreos.some(r => {
-                 const m = r.horario.match(timePattern);
-                 return m && m[1].padStart(5, '0') === start && m[2].padStart(5, '0') === end;
-              });
-
-              return (
-                <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className="border-r border-b border-slate-200 bg-white flex flex-col items-center justify-center p-2 font-mono shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-20">
-                  {isExplicitRecreo ? (
-                    <>
-                      <span className="text-[#d35400] tracking-widest text-[9px] sm:text-[10px] mb-1 font-bold">RECREO</span>
-                      <span className="text-[#d35400] text-sm sm:text-base font-black leading-none">{start}</span>
-                      <span className="text-[#f39c12] font-bold text-[10px] sm:text-xs leading-none mt-1">{end}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-slate-800 text-sm sm:text-base font-black leading-none">{start}</span>
-                      <span className="text-slate-500 font-bold text-[10px] sm:text-xs mt-1 leading-none">{end}</span>
-                    </>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* Bloques de Materias Proporcionales */}
-            {Object.entries(cellGroups).map(([key, blocksInCell]) => {
-              const [dia, start, end] = key.split('_');
-              const startIdx = boundaries.indexOf(start);
-              const endIdx = boundaries.indexOf(end);
-              const colIdx = selectedDays.indexOf(dia) + 2;
-              
-              if (startIdx === -1 || endIdx === -1 || colIdx < 2) return null;
-              
-              return (
-                <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-1 z-10 relative">
-                   <div className={`flex gap-1 h-full w-full ${blocksInCell.length > 1 ? 'flex-row' : 'flex-col'}`}>
-                      {blocksInCell.map((b: Block) => (
-                         <div key={b.id} className="flex-1 min-w-0 h-full w-full">
-                           <BlockCard block={b} onDoubleClick={() => setEditing(b)} />
-                         </div>
-                      ))}
-                   </div>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="p-10 text-center text-slate-400 font-semibold border-2 border-dashed border-slate-200 rounded-xl">No hay horarios cargados para este curso.</div>
-        )}
-        
-        {untimedBlocks.length > 0 && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-xs font-bold text-red-700 mb-2">Bloques con formato de hora no reconocido (Requiere formato HH:MM-HH:MM):</p>
-            <div className="flex flex-wrap gap-2">
-              {untimedBlocks.map(b => (
-                <div key={b.id} className="text-xs bg-white p-2 border border-red-100 rounded-lg shadow-sm cursor-pointer" onDoubleClick={() => setEditing(b)}>
-                  <strong>{b.dia} {b.horario}</strong>: {b.materia} ({b.docente})
-                </div>
-              ))}
+      <div className="relative z-10 p-6 sm:p-10 w-full min-w-[950px]">
+        {/* ENCABEZADO TIPO IMAGEN DE REFERENCIA */}
+        <div className="flex items-center justify-between mb-8 px-2">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="Escudo E.E.S.T. N° 6" className="w-16 h-16 object-contain drop-shadow-md" />
+            <div className="flex flex-col">
+              <span className="text-sm font-extrabold uppercase tracking-[0.25em] text-[#0b5c46]">E.E.S.T. N° 6 · Banfield</span>
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-4xl font-black tracking-tighter text-[#0b5c46]">Horario Escolar</h2>
+                <span className="text-[#0b5c46] text-xl font-bold tracking-widest bg-white/50 px-2 rounded">CURSO {course}</span>
+              </div>
             </div>
           </div>
-        )}
+
+          <div className="flex items-center gap-6">
+            {preceptorDelCurso && (
+              <div className="flex items-center gap-3">
+                <div className="bg-white/80 p-2 rounded-full border border-slate-200">
+                  <UserCheck className="size-5 text-[#0b5c46]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Preceptor Titular</span>
+                  <span className="text-sm font-black text-slate-800">{preceptorDelCurso.preceptorTitular || 'No asignado'}</span>
+                  {preceptorDelCurso.preceptorSuplente && <span className="text-[10px] font-bold text-slate-500">Sup: {preceptorDelCurso.preceptorSuplente}</span>}
+                </div>
+              </div>
+            )}
+            <div className="border-l border-slate-300 pl-4 py-1">
+              <p className="text-xs font-semibold italic text-slate-600 leading-tight w-32">
+                Formación técnica,<br />construyendo futuros
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* GRILLA DEL CALENDARIO */}
+        <div className="pb-4">
+          {boundaries.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: `100px repeat(${selectedDays.length}, minmax(150px, 1fr))`, gridTemplateRows: `46px ${rowHeights.join(' ')}` }} className="border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl overflow-hidden relative shadow-lg">
+              
+              {/* Cabeceras de Días (Verde oscuro) */}
+              <div className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-extrabold text-white text-xs uppercase tracking-widest shadow-inner z-30">
+                <Clock className="size-4 mr-1.5 opacity-80" /> HORARIO
+              </div>
+              {selectedDays.map((d, i) => (
+                <div key={d} style={{ gridColumn: i + 2, gridRow: 1 }} className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-xs uppercase tracking-[0.2em] shadow-inner z-30">{d}</div>
+              ))}
+
+              {/* Líneas de Grilla (Fondo) */}
+              {selectedDays.map((day, dIdx) => (
+                boundaries.slice(0, -1).map((_, rIdx) => (
+                  <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100/50" />
+                ))
+              ))}
+
+              {/* Recreos (Tiras de fondo amarillo claro y texto naranja central) */}
+              {recreos.map(r => {
+                 const m = r.horario.match(timePattern);
+                 if (!m) return null;
+                 const startIdx = boundaries.indexOf(m[1].padStart(5, '0'));
+                 const endIdx = boundaries.indexOf(m[2].padStart(5, '0'));
+                 if (startIdx === -1 || endIdx === -1) return null;
+                 
+                 return (
+                   <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#fef9e7] z-0 flex items-center justify-center border-b border-slate-100 cursor-pointer">
+                     <div className="flex items-center gap-2 text-[#d35400] opacity-80 hover:opacity-100 transition">
+                       <Coffee className="size-4" />
+                       <span className="text-sm font-black uppercase tracking-[0.5em]">RECREO</span>
+                     </div>
+                   </div>
+                 )
+              })}
+
+              {/* Etiquetas de Tiempo (Eje Y) */}
+              {boundaries.slice(0, -1).map((start, rIdx) => {
+                const end = boundaries[rIdx + 1];
+                
+                const isExplicitRecreo = recreos.some(r => {
+                   const m = r.horario.match(timePattern);
+                   return m && m[1].padStart(5, '0') === start && m[2].padStart(5, '0') === end;
+                });
+
+                return (
+                  <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className={`border-r border-b border-slate-100 flex flex-col items-center justify-center p-2 font-mono z-20 ${isExplicitRecreo ? 'bg-[#fef9e7]' : 'bg-[#f8fafc]/80'}`}>
+                    {isExplicitRecreo ? (
+                      <>
+                        <span className="text-[#d35400] text-sm sm:text-base font-black leading-none">{start}</span>
+                        <span className="text-[#e67e22] font-bold text-[10px] sm:text-xs leading-none mt-1">{end}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-slate-800 text-sm sm:text-base font-black leading-none">{start}</span>
+                        <span className="text-slate-400 font-bold text-[10px] sm:text-xs mt-1 leading-none">{end}</span>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* Bloques de Materias Proporcionales */}
+              {Object.entries(cellGroups).map(([key, blocksInCell]) => {
+                const [dia, start, end] = key.split('_');
+                const startIdx = boundaries.indexOf(start);
+                const endIdx = boundaries.indexOf(end);
+                const colIdx = selectedDays.indexOf(dia) + 2;
+                
+                if (startIdx === -1 || endIdx === -1 || colIdx < 2) return null;
+                
+                return (
+                  <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-1 z-10 relative">
+                     <div className={`flex gap-1 h-full w-full ${blocksInCell.length > 1 ? 'flex-row' : 'flex-col'}`}>
+                        {blocksInCell.map((b: Block) => (
+                           <div key={b.id} className="flex-1 min-w-0 h-full w-full">
+                             <BlockCard block={b} onDoubleClick={() => setEditing(b)} />
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="p-10 text-center text-slate-500 font-semibold border-2 border-dashed border-slate-300 rounded-xl bg-white/50 backdrop-blur-sm">No hay horarios cargados para este curso.</div>
+          )}
+        </div>
       </div>
     </div>
   </> 
@@ -627,24 +640,24 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 }
 
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
-  const statusColorClass = block.situacionRevista === 'Titular' ? 'text-blue-800' : block.situacionRevista === 'Provisional' ? 'text-red-700' : 'text-slate-900'
+  const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border-2 p-1.5 sm:p-2.5 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition ${block.tipo === 'Teoría' ? 'border-[#8ebf42] bg-[#eef8e1] text-[#1b5014]' : 'border-slate-300 bg-slate-100 text-slate-800'}`}>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-2 sm:p-3 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition bg-white border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#69b244]' : 'border-l-slate-400'}`}>
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="mb-1 flex flex-col gap-1.5 items-start w-full">
-        {block.grupo && <span className="rounded bg-[#168000] px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black text-white shrink-0 shadow-sm">{block.grupo}</span>}
-        <p className="text-[10px] sm:text-xs font-extrabold leading-tight break-words whitespace-normal w-full">{block.materia}</p>
+        {block.grupo && <span className="rounded bg-[#0b5c46] px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black text-white shrink-0 uppercase">{block.grupo}</span>}
+        <p className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[#1b5014] break-words whitespace-normal w-full leading-tight">{block.materia}</p>
       </div>
       
-      <div className="mt-auto pt-1 border-t border-black/5">
+      <div className="mt-auto pt-1">
         <div className="flex flex-col">
-          {block.docente ? <span className={`${statusColorClass} text-xs sm:text-[13px] font-black leading-tight line-clamp-2 break-words`}>{block.docente}</span> : <span className="text-xs text-slate-400 font-bold">Sin docente</span>}
-          <span className="text-[9px] sm:text-[10px] font-mono font-bold opacity-70 mt-0.5">{block.horario}</span>
+          {block.docente ? <span className={`${statusColorClass} text-xs sm:text-[13px] font-black uppercase leading-tight line-clamp-2 break-words`}>{block.docente}</span> : <span className="text-xs text-slate-300 font-bold uppercase">Sin docente</span>}
+          <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 mt-1">{block.horario}</span>
         </div>
       </div>
     </div>
     {block.suplente && (
-      <div className="mt-1.5 rounded border border-green-400 bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-900 shrink-0 truncate">
+      <div className="mt-1.5 rounded bg-blue-50 px-1.5 py-1 text-[9px] sm:text-[10px] font-bold text-blue-800 shrink-0 truncate uppercase border border-blue-100">
         Sup: {block.suplente}
       </div>
     )}
