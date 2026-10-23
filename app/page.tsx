@@ -60,33 +60,10 @@ const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
-const seed: Block[] = [
-  { id: '1', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–09:40', materia: 'CS. NATURALES', docente: 'MARTIN', situacionRevista: 'Titular' },
-  { id: '2', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Martes', horario: '07:40–09:40', materia: 'PRÁCT. DE LENGUAJE', docente: 'ELS (D.D. 2018)', situacionRevista: 'Titular' },
-  { id: '3', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Miércoles', horario: '07:40–09:40', materia: 'CS. NATURALES', docente: 'MARTIN', situacionRevista: 'Titular' },
-  { id: '4', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Jueves', horario: '07:40–09:40', materia: 'MATEMÁTICA', docente: 'BRANDAN', situacionRevista: 'Titular' },
-  { id: '5', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Viernes', horario: '07:40–09:40', materia: 'CCD', docente: 'ECHAVERRIA', situacionRevista: 'Titular' },
-  { id: '6', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '09:50–11:50', materia: 'CS. SOCIALES', docente: 'BOGARIN', situacionRevista: 'Provisional' },
-  { id: '7', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Martes', horario: '09:50–11:50', materia: 'MATEMÁTICA', docente: 'BRANDAN', situacionRevista: 'Titular' },
-  { id: '8', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Miércoles', horario: '09:50–11:50', materia: 'PRÁCT. DE LENGUAJE', docente: 'ELS', situacionRevista: 'Titular' },
-  { id: '9', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Jueves', horario: '09:50–11:50', materia: 'INGLÉS', docente: 'CORRADINO ANDREA (MAD 2026)', situacionRevista: 'Titular' },
-  { id: '10', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Viernes', horario: '09:50–11:50', materia: 'ED. ARTÍSTICA', docente: 'PELLEGRINI', situacionRevista: 'Titular', suplente: 'TORREZ JUAN DAVID' },
-  { id: '11', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Jueves', horario: '11:50–12:50', materia: 'CS. SOCIALES', docente: 'BOGARIN', situacionRevista: 'Provisional' },
-  { id: '12', curso: '1°1°', turno: 'Teoría', tipo: 'Teoría', dia: 'Viernes', horario: '11:50–12:50', materia: 'CS. SOCIALES', docente: 'BOGARIN', situacionRevista: 'Provisional' },
-  { id: '13', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Lunes', grupo: 'Grupo A', horario: '13:00–15:00', materia: 'Sistemas Tecnológicos', docente: 'ATENCIO', situacionRevista: 'Provisional' },
-  { id: '14', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Lunes', grupo: 'Grupo B', horario: '13:00–15:00', materia: 'Procedim. Técnicos', docente: 'FERNANDEZ OSVALDO', situacionRevista: 'Provisional' },
-  { id: '15', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Martes', horario: '13:00–15:00', materia: 'Educación Física', docente: 'RODRIGUEZ, DANIEL', situacionRevista: 'Titular' },
-  { id: '16', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Miércoles', grupo: 'Grupo A', horario: '13:00–15:00', materia: 'Lenguajes Tecnológicos', docente: 'OSORIO MARCELA', situacionRevista: 'Provisional' },
-  { id: '17', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Miércoles', grupo: 'Grupo B', horario: '13:00–15:00', materia: 'Lenguajes Tecnológicos', docente: 'MAZEI', situacionRevista: 'Provisional' },
-  { id: '18', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Lunes', grupo: 'Grupo A', horario: '15:10–17:10', materia: 'Procedim. Técnicos', docente: 'FERNANDEZ OSVALDO', situacionRevista: 'Provisional' },
-  { id: '19', curso: '1°1°', turno: 'Taller', tipo: 'Taller', dia: 'Lunes', grupo: 'Grupo B', horario: '15:10–17:10', materia: 'Sistemas Tecnológicos', docente: 'ATENCIO', situacionRevista: 'Provisional' },
-]
-
+const seed: Block[] = []
 const seedAusencias: AusenciaRecord[] = []
-const seedPreceptores: PreceptorAssignment[] = courses.map((c, idx) => ({
-  curso: c,
-  preceptorTitular: ['CAYATA', 'FEMIA', 'CEPEDA', 'NAHIA', 'ALFONSIN', 'GRISELDA'][idx % 6],
-  preceptorSuplente: idx % 3 === 0 ? 'RODRIGUEZ SILVINA' : ''
+const seedPreceptores: PreceptorAssignment[] = courses.map((c) => ({
+  curso: c, preceptorTitular: '', preceptorSuplente: ''
 }))
 
 const statusStyle: Record<Status, string> = { Titular: 'text-blue-700 bg-blue-50 border-blue-200', Provisional: 'text-red-700 bg-red-50 border-red-200', 'Titular Interino': 'text-gray-950 bg-gray-100 border-gray-300' }
@@ -306,7 +283,7 @@ export default function Page() {
         </div>
       </div>
 
-      {view === 'horario' && <ScheduleView course={course} setCourse={setCourse} filter={filter} setFilter={setFilter} selectedDays={selectedDays} setSelectedDays={setSelectedDays} visible={visible} blocks={blocks} setBlocks={setBlocks} courseTimes={courseTimes} courses={courses} preceptores={preceptores} setEditing={setEditing} onAdd={() => setEditing({ id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–08:40', materia: 'Nueva materia', docente: '', situacionRevista: 'Titular' })} onManageRecreos={() => setShowRecreosModal(true)} />}
+      {view === 'horario' && <ScheduleView course={course} setCourse={setCourse} filter={filter} setFilter={setFilter} selectedDays={selectedDays} setSelectedDays={setSelectedDays} visible={visible} blocks={blocks} setBlocks={setBlocks} courses={courses} preceptores={preceptores} setEditing={setEditing} onAdd={() => setEditing({ id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–08:40', materia: 'Nueva materia', docente: '', situacionRevista: 'Titular' })} onManageRecreos={() => setShowRecreosModal(true)} />}
       {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} results={searchResults} setEditing={setEditing} />}
       {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} />}
       {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
@@ -326,12 +303,57 @@ function Tab({ active, onClick, icon, label }: { active: boolean; onClick: () =>
   return <button onClick={onClick} className={`flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-bold transition whitespace-nowrap ${active ? 'border-[#168000] text-[#168000]' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{icon}<span>{label}</span></button> 
 }
 
-function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setSelectedDays, visible, blocks, setBlocks, courseTimes, courses, preceptores, setEditing, onAdd, onManageRecreos }: any) { 
+function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setSelectedDays, visible, blocks, setBlocks, courses, preceptores, setEditing, onAdd, onManageRecreos }: any) { 
   const tableRef = useRef<HTMLDivElement>(null)
   const [downloadingImg, setDownloadingImg] = useState(false)
 
+  // Motor de calendario CSS Grid
+  const timePattern = /(\d{1,2}:\d{2})\s*[-– aA]+\s*(\d{1,2}:\d{2})/i;
+  
+  const courseBlocks = blocks.filter((b: Block) => b.curso === course);
+  const boundariesSet = new Set<string>();
+  courseBlocks.forEach((b: Block) => {
+    const m = b.horario.match(timePattern);
+    if (m) {
+      boundariesSet.add(m[1].padStart(5, '0'));
+      boundariesSet.add(m[2].padStart(5, '0'));
+    }
+  });
+  const boundaries = Array.from(boundariesSet).sort();
+
+  function timeToMins(t: string) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  // Altura dinámica: 1 minuto = 1.8 píxeles
+  const rowHeights = boundaries.slice(0, -1).map((start, i) => {
+    const end = boundaries[i + 1];
+    const dur = timeToMins(end) - timeToMins(start);
+    return `${Math.max(dur * 1.8, 35)}px`; 
+  });
+
+  const cellGroups: Record<string, Block[]> = {};
+  const untimedBlocks: Block[] = [];
+  
+  visible.forEach((b: Block) => {
+    if (b.tipo === 'Recreo') return;
+    const m = b.horario.match(timePattern);
+    if (m) {
+      const start = m[1].padStart(5, '0');
+      const end = m[2].padStart(5, '0');
+      const key = `${b.dia}_${start}_${end}`;
+      if (!cellGroups[key]) cellGroups[key] = [];
+      cellGroups[key].push(b);
+    } else {
+      untimedBlocks.push(b);
+    }
+  });
+
+  const recreos = blocks.filter((b: Block) => b.curso === course && b.tipo === 'Recreo');
+
   function descargarExcelCursoEstetico() {
-    const cursoBlocks = blocks.filter((b: Block) => b.curso === course)
+    const cursoBlocks = blocks.filter((b: Block) => b.curso === course && b.tipo !== 'Recreo')
     const preceptorInfo = preceptores.find((p: PreceptorAssignment) => p.curso === course)
     const wb = XLSX.utils.book_new()
     const exportData = [
@@ -341,28 +363,45 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
       [""],
       ["HORARIO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"]
     ]
-    courseTimes.forEach((time: string) => {
-      const isRecreo = blocks.some((x: Block) => x.curso === course && x.horario === time && x.tipo === 'Recreo')
+    
+    boundaries.slice(0, -1).forEach((start, i) => {
+      const end = boundaries[i+1];
+      const timeStr = `${start}-${end}`;
+      const isRecreo = recreos.some((r: Block) => {
+        const m = r.horario.match(timePattern);
+        return m && m[1].padStart(5, '0') === start && m[2].padStart(5, '0') === end;
+      });
+
       if (isRecreo) {
-        exportData.push([time, "RECREO", "RECREO", "RECREO", "RECREO", "RECREO"])
+        exportData.push([timeStr, "RECREO", "RECREO", "RECREO", "RECREO", "RECREO"])
       } else {
-        const rowData = [time]
+        const rowData = [timeStr]
         days.forEach(day => {
-          const match = cursoBlocks.filter((b: Block) => b.dia === day && b.horario === time && b.tipo !== 'Recreo')
-          if (match.length === 0) {
+          const blocksInCell = cursoBlocks.filter((b: Block) => {
+            const m = b.horario.match(timePattern);
+            if (!m) return false;
+            const bStart = timeToMins(m[1].padStart(5, '0'));
+            const bEnd = timeToMins(m[2].padStart(5, '0'));
+            const segStart = timeToMins(start);
+            const segEnd = timeToMins(end);
+            return b.dia === day && bStart <= segStart && bEnd >= segEnd;
+          });
+          
+          if (blocksInCell.length === 0) {
             rowData.push("")
           } else {
-            const txt = match.map((b: Block) => `${b.materia} (${b.docente}${b.suplente ? ' / Sup: ' + b.suplente : ''})${b.grupo ? ' [' + b.grupo + ']' : ''}`).join(" | ")
+            const txt = blocksInCell.map((b: Block) => `${b.materia} (${b.docente}${b.suplente ? ' / Sup: ' + b.suplente : ''})${b.grupo ? ' [' + b.grupo + ']' : ''}`).join(" | ")
             rowData.push(txt)
           }
         })
         exportData.push(rowData)
       }
     })
+    
     const ws = XLSX.utils.aoa_to_sheet(exportData)
     ws['!cols'] = [{ wch: 15 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 28 }]
     XLSX.utils.book_append_sheet(wb, ws, `Curso_${course.replace('°', '_').replace('°', '')}`)
-    XLSX.writeFile(wb, `horario-curso-${course.replace('°', '').replace('°', '')}-estetico.xlsx`)
+    XLSX.writeFile(wb, `horario-curso-${course.replace('°', '').replace('°', '')}.xlsx`)
   }
 
   async function descargarImagenCurso() {
@@ -375,7 +414,6 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
       link.href = dataUrl
       link.click()
     } catch (err) {
-      console.error('Error al generar la imagen:', err)
       alert('No se pudo generar la imagen. Probá nuevamente.')
     } finally {
       setDownloadingImg(false)
@@ -399,9 +437,9 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
       </div>
       <div className="flex flex-wrap gap-2 sm:ml-auto w-full sm:w-auto">
         <Button variant="outline" className="flex-1 sm:flex-none border-[#ffb700] text-[#866500] hover:bg-[#fff8d8]" onClick={onManageRecreos}><Clock className="size-4 mr-1" /> Recreos</Button>
-        <Button variant="outline" className="flex-1 sm:flex-none border-blue-600 text-blue-700 hover:bg-blue-50" onClick={descargarExcelCursoEstetico}><FileSpreadsheet className="size-4 mr-1" /> Excel Estético</Button>
+        <Button variant="outline" className="flex-1 sm:flex-none border-blue-600 text-blue-700 hover:bg-blue-50" onClick={descargarExcelCursoEstetico}><FileSpreadsheet className="size-4 mr-1" /> Excel</Button>
         <Button variant="outline" className="flex-1 sm:flex-none border-purple-600 text-purple-700 hover:bg-purple-50" onClick={descargarImagenCurso} disabled={downloadingImg}>
-          <ImageIcon className="size-4 mr-1" /> {downloadingImg ? 'Generando...' : 'Descargar Imagen (PNG)'}
+          <ImageIcon className="size-4 mr-1" /> {downloadingImg ? 'Generando...' : 'Descargar PNG'}
         </Button>
         <Button className="bg-[#168000] text-white hover:bg-[#106500] flex-1 sm:flex-none" onClick={onAdd}><span className="text-lg leading-none">+</span> Agregar</Button>
       </div>
@@ -414,7 +452,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-gray-900" label="Titular interino" />
         <Legend color="bg-green-600" label="Suplente" />
       </div>
-      <span className="text-slate-500">Doble clic para editar · Usá los botones para descargar</span>
+      <span className="text-slate-500">Doble clic para editar</span>
     </div>
 
     <div ref={tableRef} className="overflow-x-auto rounded-2xl border border-[#d7e8c9] bg-white shadow-sm p-4 print:p-0 print:border-none print:shadow-none">
@@ -434,49 +472,89 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         )}
       </div>
 
-      <section className="min-w-[760px]">
-        <div className="grid grid-cols-[130px_repeat(5,1fr)] border-b bg-[#f4faed] text-xs font-extrabold uppercase tracking-wider text-[#267018]">
-          <div className="p-3">Horario</div>
-          {days.map((d) => <div key={d} className="border-l border-[#d7e8c9] p-3">{d}</div>)}
-        </div>
-        {courseTimes.map((time: string) => {
-          const isRecreoRow = blocks.some((x: Block) => x.curso === course && x.horario === time && x.tipo === 'Recreo')
-          
-          if (isRecreoRow) {
-            const recreoBlock = blocks.find((x: Block) => x.curso === course && x.horario === time && x.tipo === 'Recreo')
-            return (
-              <div key={time} onDoubleClick={() => recreoBlock && setEditing(recreoBlock)} className="grid grid-cols-[130px_1fr] border-b border-slate-100 bg-[#ffb700] text-slate-950 cursor-pointer hover:bg-[#f5ad00] transition print:cursor-default">
-                <div className="flex flex-col justify-center gap-1 p-2.5 font-mono text-xs font-black uppercase tracking-wider border-r border-[#e0a200]">
-                  {time}
-                </div>
-                <div className="flex items-center justify-center px-4 py-2 text-xs font-black uppercase tracking-[0.3em]">
-                  <span>RECREO</span>
-                </div>
-              </div>
-            )
-          }
+      <div className="min-w-[850px] pb-4">
+        {boundaries.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: `90px repeat(${selectedDays.length}, minmax(140px, 1fr))`, gridTemplateRows: `40px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-[#fbfdf9] rounded-xl overflow-hidden relative">
+            
+            {/* Cabeceras de Días */}
+            <div className="border-r border-b border-slate-200 bg-[#f4faed] p-2 flex items-center justify-center font-extrabold text-[#267018] text-[10px] uppercase tracking-widest">HORARIO</div>
+            {selectedDays.map((d, i) => (
+              <div key={d} style={{ gridColumn: i + 2, gridRow: 1 }} className="border-r border-b border-slate-200 bg-[#f4faed] p-2 flex items-center justify-center font-extrabold text-[#267018] text-xs uppercase tracking-wider">{d}</div>
+            ))}
 
-          return (
-            <div key={time} className="grid min-h-[100px] grid-cols-[130px_repeat(5,1fr)] border-b border-slate-100">
-              <div className="flex flex-col justify-center gap-1 p-2 sm:p-3">
-                <span className="font-mono text-xs sm:text-sm font-bold text-slate-700">{time}</span>
-              </div>
-              {days.map((day) => { 
-                const cellBlocks = visible.filter((x: Block) => x.dia === day && x.horario === time && x.tipo !== 'Recreo')
-                return (
-                  <div key={day} className="border-l border-slate-100 p-1.5 sm:p-2">
-                    <div className={`grid gap-1 h-full ${cellBlocks.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                      {cellBlocks.map((b: Block) => (
-                        <BlockCard key={b.id} block={b} onDoubleClick={() => setEditing(b)} />
+            {/* Líneas de Grilla (Fondo) */}
+            {selectedDays.map((day, dIdx) => (
+              boundaries.slice(0, -1).map((_, rIdx) => (
+                <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100" />
+              ))
+            ))}
+
+            {/* Recreos (Tiras de fondo amarillo) */}
+            {recreos.map(r => {
+               const m = r.horario.match(timePattern);
+               if (!m) return null;
+               const startIdx = boundaries.indexOf(m[1].padStart(5, '0'));
+               const endIdx = boundaries.indexOf(m[2].padStart(5, '0'));
+               if (startIdx === -1 || endIdx === -1) return null;
+               
+               return (
+                 <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#ffb700] z-0 flex items-center justify-center border-b border-[#e0a200] opacity-25 cursor-pointer">
+                   <span className="text-xs font-black uppercase tracking-[0.5em] text-[#866500]">RECREO</span>
+                 </div>
+               )
+            })}
+
+            {/* Etiquetas de Tiempo (Eje Y) */}
+            {boundaries.slice(0, -1).map((start, rIdx) => {
+              const end = boundaries[rIdx + 1];
+              const dur = timeToMins(end) - timeToMins(start);
+              const isBreak = dur <= 15;
+              return (
+                <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className="border-r border-b border-slate-200 bg-white flex flex-col items-center justify-center p-1 text-[10px] sm:text-[11px] font-mono font-extrabold text-slate-700 shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-20">
+                  {isBreak ? <span className="text-[#ffb700]">RECREO</span> : <><span>{start}</span><span className="text-slate-400 font-medium text-[9px]">{end}</span></>}
+                </div>
+              )
+            })}
+
+            {/* Bloques de Materias Proporcionales */}
+            {Object.entries(cellGroups).map(([key, blocksInCell]) => {
+              const [dia, start, end] = key.split('_');
+              const startIdx = boundaries.indexOf(start);
+              const endIdx = boundaries.indexOf(end);
+              const colIdx = selectedDays.indexOf(dia) + 2;
+              
+              if (startIdx === -1 || endIdx === -1 || colIdx < 2) return null;
+              
+              return (
+                <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-1 z-10 relative">
+                   <div className={`flex gap-1 h-full w-full ${blocksInCell.length > 1 ? 'flex-row' : 'flex-col'}`}>
+                      {blocksInCell.map((b: Block) => (
+                         <div key={b.id} className="flex-1 min-w-0 h-full w-full shadow-sm hover:shadow-md transition bg-white rounded-xl">
+                           <BlockCard block={b} onDoubleClick={() => setEditing(b)} />
+                         </div>
                       ))}
-                    </div>
-                  </div>
-                )
-              })}
+                   </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="p-10 text-center text-slate-400 font-semibold border-2 border-dashed border-slate-200 rounded-xl">No hay horarios cargados para este curso.</div>
+        )}
+        
+        {untimedBlocks.length > 0 && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-xs font-bold text-red-700 mb-2">Bloques con formato de hora no reconocido (Requiere formato HH:MM-HH:MM):</p>
+            <div className="flex flex-wrap gap-2">
+              {untimedBlocks.map(b => (
+                <div key={b.id} className="text-xs bg-white p-2 border border-red-100 rounded-lg shadow-sm cursor-pointer" onDoubleClick={() => setEditing(b)}>
+                  <strong>{b.dia} {b.horario}</strong>: {b.materia} ({b.docente})
+                </div>
+              ))}
             </div>
-          )
-        })}
-      </section>
+          </div>
+        )}
+      </div>
     </div>
   </> 
 }
@@ -535,18 +613,18 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-blue-700' : block.situacionRevista === 'Provisional' ? 'text-red-700' : 'text-gray-950'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border p-2 transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between ${block.tipo === 'Teoría' ? 'border-[#9dcc39] bg-[#eaf7d9] text-[#205d19]' : 'border-slate-300 bg-slate-50 text-slate-700'}`}>
-    <div>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-xl border p-1.5 sm:p-2 flex flex-col h-full w-full overflow-hidden relative ${block.tipo === 'Teoría' ? 'border-[#9dcc39] bg-[#eaf7d9] text-[#205d19]' : 'border-slate-300 bg-slate-50 text-slate-700'}`}>
+    <div className="flex-1 min-h-0">
       <div className="mb-0.5 flex items-start justify-between gap-1">
-        <p className="text-[10px] sm:text-[11px] font-extrabold leading-tight">{block.materia}</p>
+        <p className="text-[10px] sm:text-[11px] font-extrabold leading-tight line-clamp-3">{block.materia}</p>
         {block.grupo && <span className="rounded bg-[#168000] px-1 py-0.5 text-[8px] sm:text-[9px] font-black text-white shrink-0">{block.grupo}</span>}
       </div>
-      <div className="flex flex-col text-[9px] sm:text-[10px] font-semibold">
-        {block.docente ? <span className={`${statusColorClass} font-bold`}>{block.docente}</span> : <span className="text-slate-400">Sin docente</span>}
+      <div className="flex flex-col text-[9px] sm:text-[10px] font-semibold mt-1">
+        {block.docente ? <span className={`${statusColorClass} font-bold line-clamp-2`}>{block.docente}</span> : <span className="text-slate-400">Sin docente</span>}
       </div>
     </div>
     {block.suplente && (
-      <div className="mt-1 rounded border border-green-300 bg-green-50 px-1 py-0.5 text-[9px] font-bold text-green-800">
+      <div className="mt-1 rounded border border-green-300 bg-green-50 px-1 py-0.5 text-[9px] font-bold text-green-800 shrink-0 truncate">
         Sup: {block.suplente}
       </div>
     )}
@@ -939,7 +1017,6 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
       link.href = dataUrl
       link.click()
     } catch (err) {
-      console.error('Error al generar la imagen:', err)
       alert('No se pudo generar la imagen. Probá nuevamente.')
     } finally {
       setDownloadingImg(false)
@@ -1103,7 +1180,7 @@ function Editor({ block, courses, onClose, onSave, onDelete }: { block: Block; c
         <Field label="Materia"><input value={draft.materia} onChange={(e) => set('materia', e.target.value)} /></Field>
         <Field label="Docente"><input value={draft.docente} onChange={(e) => set('docente', e.target.value)} /></Field>
         <Field label="Día"><select value={draft.dia} onChange={(e) => set('dia', e.target.value)}>{days.map((d) => <option key={d}>{d}</option>)}</select></Field>
-        <Field label="Horario"><input value={draft.horario} onChange={(e) => set('horario', e.target.value)} placeholder="Ej. 11:50–12:50 o 09:40–09:50" /></Field>
+        <Field label="Horario"><input value={draft.horario} onChange={(e) => set('horario', e.target.value)} placeholder="Ej. 11:50–12:50 o 07:40–10:50" /></Field>
         <Field label="Tipo de horario"><select value={draft.tipo} onChange={(e) => { const tipo = e.target.value as Block['tipo']; setDraft((d: Block) => ({ ...d, tipo, turno: tipo === 'Taller' ? 'Taller' : 'Teoría', materia: tipo === 'Recreo' ? 'Recreo' : d.materia })) }}><option>Teoría</option><option>Taller</option><option>Recreo</option></select></Field>
         <Field label="Grupo"><select value={draft.grupo ?? ''} onChange={(e) => set('grupo', e.target.value)}><option value="">Curso completo</option><option>Grupo A</option><option>Grupo B</option><option>Ambos</option></select></Field>
         <Field label="Situación de revista"><select value={draft.situacionRevista} onChange={(e) => set('situacionRevista', e.target.value)}><option>Titular</option><option>Provisional</option><option>Titular Interino</option></select></Field>
