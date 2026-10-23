@@ -239,64 +239,71 @@ export default function Page() {
     } 
   }
 
-  return <div className="min-h-screen bg-[url('/fondo.jpg')] bg-cover bg-center bg-fixed text-slate-950">
-    <header className="border-b border-white/20 bg-white/90 backdrop-blur-md shadow-sm print:hidden">
-      <div className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-5 py-3">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <img src={logo} alt="Escudo E.E.S.T. N° 6" className="size-12 sm:size-14 object-contain shrink-0" />
-          <div>
-            <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0b5c46]">E.E.S.T. N° 6</div>
-            <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900">Gestión de Horarios, Preceptores y Paros</h1>
-            <p className="text-[11px] sm:text-xs text-slate-600">Banfield · Lomas de Zamora</p>
+  return (
+    <>
+      {/* CAPA DE FONDO FIJA PARA MÓVILES Y ESCRITORIO */}
+      <div className="fixed inset-0 -z-10 bg-[url('/fondo.jpg')] bg-cover bg-center bg-no-repeat pointer-events-none" />
+      
+      <div className="min-h-screen text-slate-950 flex flex-col">
+        <header className="border-b border-white/20 bg-white/90 backdrop-blur-md shadow-sm print:hidden">
+          <div className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-5 py-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <img src={logo} alt="Escudo E.E.S.T. N° 6" className="size-12 sm:size-14 object-contain shrink-0" />
+              <div>
+                <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#0b5c46]">E.E.S.T. N° 6</div>
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900">Gestión de Horarios, Preceptores y Paros</h1>
+                <p className="text-[11px] sm:text-xs text-slate-600">Banfield · Lomas de Zamora</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <Button variant="outline" size="sm" onClick={descargarBaseCompletaExcel} className="bg-white/80"><FileSpreadsheet data-icon="inline-start" />Base Completa (Excel)</Button>
+              <Button variant="outline" size="sm" onClick={syncSpreadsheet} disabled={syncing} className="bg-white/80"><Download data-icon="inline-start" />{syncing ? 'Conectando…' : 'Sincronizar'}</Button>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" size="sm" onClick={descargarBaseCompletaExcel} className="bg-white/80"><FileSpreadsheet data-icon="inline-start" />Base Completa (Excel)</Button>
-          <Button variant="outline" size="sm" onClick={syncSpreadsheet} disabled={syncing} className="bg-white/80"><Download data-icon="inline-start" />{syncing ? 'Conectando…' : 'Sincronizar'}</Button>
-        </div>
-      </div>
-      <nav className="mx-auto flex max-w-[1500px] gap-1 overflow-x-auto px-4 sm:px-5 scrollbar-none" aria-label="Secciones">
-        <Tab active={view === 'horario'} onClick={() => setView('horario')} icon={<CalendarDays className="size-4 shrink-0" />} label="Horarios" />
-        <Tab active={view === 'docentes'} onClick={() => setView('docentes')} icon={<Users className="size-4 shrink-0" />} label="Docentes" />
-        <Tab active={view === 'ausencias'} onClick={() => setView('ausencias')} icon={<UserX className="size-4 shrink-0" />} label="Ausencias" />
-        <Tab active={view === 'preceptores'} onClick={() => setView('preceptores')} icon={<UserCheck className="size-4 shrink-0" />} label="Preceptores" />
-        <Tab active={view === 'paro'} onClick={() => setView('paro')} icon={<ShieldCheck className="size-4 shrink-0" />} label="Registro de Paro" />
-      </nav>
-    </header>
-    
-    <main className="mx-auto max-w-[1500px] px-4 sm:px-5 py-4 sm:py-6">
-      <div className="mb-6 print:hidden">
-        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/40">
-          <div>
-            <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0b5c46]">Panel de control</p>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-              {view === 'horario' ? 'Horario semanal y recreos' : view === 'docentes' ? 'Buscar docentes' : view === 'ausencias' ? 'Base de datos de ausencias y cobertura' : view === 'preceptores' ? 'Asignación de preceptores por curso' : 'Historial y control diario de paro'}
-            </h2>
-            <p className="mt-1 text-xs sm:text-sm text-slate-600">Actualización activa · {syncMessage}</p>
+          <nav className="mx-auto flex max-w-[1500px] gap-1 overflow-x-auto px-4 sm:px-5 scrollbar-none" aria-label="Secciones">
+            <Tab active={view === 'horario'} onClick={() => setView('horario')} icon={<CalendarDays className="size-4 shrink-0" />} label="Horarios" />
+            <Tab active={view === 'docentes'} onClick={() => setView('docentes')} icon={<Users className="size-4 shrink-0" />} label="Docentes" />
+            <Tab active={view === 'ausencias'} onClick={() => setView('ausencias')} icon={<UserX className="size-4 shrink-0" />} label="Ausencias" />
+            <Tab active={view === 'preceptores'} onClick={() => setView('preceptores')} icon={<UserCheck className="size-4 shrink-0" />} label="Preceptores" />
+            <Tab active={view === 'paro'} onClick={() => setView('paro')} icon={<ShieldCheck className="size-4 shrink-0" />} label="Registro de Paro" />
+          </nav>
+        </header>
+        
+        <main className="mx-auto max-w-[1500px] px-4 sm:px-5 py-4 sm:py-6 flex-1">
+          <div className="mb-6 print:hidden">
+            <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/40">
+              <div>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0b5c46]">Panel de control</p>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                  {view === 'horario' ? 'Horario semanal y recreos' : view === 'docentes' ? 'Buscar docentes' : view === 'ausencias' ? 'Base de datos de ausencias y cobertura' : view === 'preceptores' ? 'Asignación de preceptores por curso' : 'Historial y control diario de paro'}
+                </h2>
+                <p className="mt-1 text-xs sm:text-sm text-slate-600">Actualización activa · {syncMessage}</p>
+              </div>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save}>
+                  {saved ? <Check data-icon="inline-start" /> : <Cloud data-icon="inline-start" />}
+                  {saved ? 'Guardado' : dirty ? `Guardar (${dirty})` : 'Guardar cambios'}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save}>
-              {saved ? <Check data-icon="inline-start" /> : <Cloud data-icon="inline-start" />}
-              {saved ? 'Guardado' : dirty ? `Guardar (${dirty})` : 'Guardar cambios'}
-            </Button>
-          </div>
-        </div>
-      </div>
 
-      {view === 'horario' && <ScheduleView course={course} setCourse={setCourse} filter={filter} setFilter={setFilter} selectedDays={selectedDays} setSelectedDays={setSelectedDays} visible={visible} blocks={blocks} setBlocks={setBlocks} courses={courses} preceptores={preceptores} setEditing={setEditing} onAdd={() => setEditing({ id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–08:40', materia: 'Nueva materia', docente: '', situacionRevista: 'Titular' })} onManageRecreos={() => setShowRecreosModal(true)} />}
-      {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} results={searchResults} setEditing={setEditing} />}
-      {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} />}
-      {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
-      {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
-    </main>
-    
-    <footer className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-2 border-t border-white/20 px-4 sm:px-5 py-4 text-xs text-slate-600 print:hidden text-center sm:text-left bg-white/80 backdrop-blur-md mt-8">
-      <span>© 2026 E.E.S.T. N° 6 · Sistema de Gestión Escolar</span>
-      <span className="flex items-center gap-1.5"><Zap className="size-3 text-[#388e3c]" />Sincronización en vivo con Drive</span>
-    </footer>
-    {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); setEditing(null); setDirty((n) => n + 1) }} />}
-    {showRecreosModal && <RecreosModal course={course} blocks={blocks} setBlocks={setBlocks} onClose={() => setShowRecreosModal(false)} setDirty={setDirty} />}
-  </div>
+          {view === 'horario' && <ScheduleView course={course} setCourse={setCourse} filter={filter} setFilter={setFilter} selectedDays={selectedDays} setSelectedDays={setSelectedDays} visible={visible} blocks={blocks} setBlocks={setBlocks} courses={courses} preceptores={preceptores} setEditing={setEditing} onAdd={() => setEditing({ id: crypto.randomUUID(), curso: course, turno: 'Teoría', tipo: 'Teoría', dia: 'Lunes', horario: '07:40–08:40', materia: 'Nueva materia', docente: '', situacionRevista: 'Titular' })} onManageRecreos={() => setShowRecreosModal(true)} />}
+          {view === 'docentes' && <TeacherView query={query} setQuery={setQuery} teachers={teachers} results={searchResults} setEditing={setEditing} />}
+          {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} />}
+          {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
+          {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
+        </main>
+        
+        <footer className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-2 border-t border-white/20 px-4 sm:px-5 py-4 text-xs text-slate-600 print:hidden text-center sm:text-left bg-white/80 backdrop-blur-md mt-auto w-full">
+          <span>© 2026 E.E.S.T. N° 6 · Sistema de Gestión Escolar</span>
+          <span className="flex items-center gap-1.5"><Zap className="size-3 text-[#388e3c]" />Sincronización en vivo con Drive</span>
+        </footer>
+        {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); setEditing(null); setDirty((n) => n + 1) }} />}
+        {showRecreosModal && <RecreosModal course={course} blocks={blocks} setBlocks={setBlocks} onClose={() => setShowRecreosModal(false)} setDirty={setDirty} />}
+      </div>
+    </>
+  )
 }
 
 function Tab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) { 
@@ -326,11 +333,11 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     return h * 60 + m;
   }
 
-  // Altura dinámica ajustada para que quede compacto (1 min = 1.5 px)
+  // Altura dinámica más compacta (1 min = 1.1 px) para reducir espacios vacíos
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
-    return `${Math.max(dur * 1.5, 32)}px`; 
+    return `${Math.max(dur * 1.1, 28)}px`; 
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -408,7 +415,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     if (!tableRef.current) return
     setDownloadingImg(true)
     try {
-      const dataUrl = await toPng(tableRef.current, { cacheBust: true, quality: 1, pixelRatio: 2 })
+      const dataUrl = await toPng(tableRef.current, { cacheBust: true, quality: 1, pixelRatio: 2, backgroundColor: '#ffffff' })
       const link = document.createElement('a')
       link.download = `horario-curso-${course.replace('°', '').replace('°', '')}.png`
       link.href = dataUrl
@@ -450,12 +457,12 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-[#0052cc]" label="Titular" />
         <Legend color="bg-[#cc0000]" label="Provisional" />
         <Legend color="bg-slate-900" label="Titular interino" />
-        <Legend color="bg-[#1b5e20]" label="Suplente" />
+        <Legend color="bg-[#0b5c46]" label="Suplente" />
       </div>
       <span className="text-slate-600">Doble clic en los cuadrados para editarlos</span>
     </div>
 
-    {/* ZONA DE DESCARGA - CAPTURA CON FONDO LIMPIO */}
+    {/* ZONA DE DESCARGA - CAPTURA CON FONDO BLANCO LIMPIO PARA EL PNG */}
     <div ref={tableRef} className="relative w-full max-w-full bg-white p-4 sm:p-6 rounded-2xl shadow-xl print:shadow-none print:p-0">
       
       <div className="relative z-10 w-full min-w-[850px]">
@@ -549,7 +556,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                       </>
                     ) : (
                       <>
-                        <span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
+                        <span className="text-[#0b5c46] text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
                         <span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span>
                       </>
                     )}
@@ -642,23 +649,26 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-1.5 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition bg-white border-l-[5px] sm:border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#0b5c46]' : 'border-l-slate-400'}`}>
-    <div className="flex-1 min-h-0 flex flex-col justify-between">
-      <div className="flex flex-col gap-0.5 items-start w-full">
-        {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
-        <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-tight text-[#0b5c46] break-words whitespace-normal w-full leading-[1.1]">{block.materia}</p>
-      </div>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-2 flex flex-col w-full h-full overflow-hidden relative shadow-sm hover:shadow-md transition border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-l-slate-400 bg-white'}`}>
+    {block.grupo && <div className="mb-1"><span className="rounded bg-[#0b5c46] px-1.5 py-0.5 text-[9px] font-black text-white uppercase shadow-sm leading-none">{block.grupo}</span></div>}
+    
+    <div className="flex flex-col gap-1">
+      <p className="text-[11px] sm:text-xs font-black uppercase tracking-tight text-[#0b5c46] break-words whitespace-normal leading-tight">{block.materia}</p>
       
-      <div className="mt-auto pt-0.5">
-        <div className="flex flex-col">
-          {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[11px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
-          <span className="text-[8px] sm:text-[9px] font-mono font-bold text-slate-400 mt-0.5">{block.horario}</span>
-        </div>
+      <div className="flex flex-col">
+        {block.docente ? <span className={`${statusColorClass} text-[11px] sm:text-[12px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
+        <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 mt-0.5">{block.horario}</span>
       </div>
     </div>
+
     {block.suplente && (
-      <div className="mt-0.5 rounded bg-[#e8f5e9] px-1 py-0.5 text-[9px] sm:text-[10px] font-black text-[#1b5e20] border border-[#c8e6c9] shrink-0 break-words uppercase whitespace-normal leading-tight">
-        SUP: {block.suplente}
+      <div className="mt-1.5 w-fit rounded-full bg-[#dcfce7] px-2 py-0.5 border border-[#86efac]">
+        <span className="text-[9px] sm:text-[10px] font-bold text-[#166534] uppercase leading-tight">
+          Suplente
+        </span>
+        <div className="text-[10px] font-medium text-[#14532d] uppercase mt-0.5 break-words whitespace-normal leading-tight">
+          {block.suplente}
+        </div>
       </div>
     )}
   </div> 
