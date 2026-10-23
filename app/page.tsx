@@ -326,11 +326,11 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     return h * 60 + m;
   }
 
-  // Altura dinámica ajustada para ser más pequeña y compacta (1 min = 1.6 px)
+  // Altura dinámica ajustada para que quede compacto (1 min = 1.5 px)
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
-    return `${Math.max(dur * 1.6, 38)}px`; 
+    return `${Math.max(dur * 1.5, 32)}px`; 
   });
 
   const cellGroups: Record<string, Block[]> = {};
@@ -432,6 +432,9 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
       <div className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1 justify-center">
         {days.map((day) => <button key={day} onClick={() => setSelectedDays((current: string[]) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day])} className={`rounded-md px-2 py-1.5 text-xs font-bold ${selectedDays.includes(day) ? 'bg-white text-[#0b5c46] shadow-sm' : 'text-slate-400'}`}>{day.slice(0, 3)}</button>)}
       </div>
+      <div className="flex rounded-lg bg-slate-100 p-1 justify-center">
+        {(['Todos', 'Teoría', 'Taller'] as const).map((x) => <button key={x} onClick={() => setFilter(x)} className={`rounded-md px-3 py-1.5 text-xs font-bold ${filter === x ? 'bg-white text-[#168000] shadow-sm' : 'text-slate-500'}`}>{x === 'Todos' ? 'Todos' : `Solo ${x}`}</button>)}
+      </div>
       <div className="flex flex-wrap gap-2 sm:ml-auto w-full sm:w-auto">
         <Button variant="outline" className="flex-1 sm:flex-none border-[#f39c12] text-[#d35400] hover:bg-[#fef9e7] bg-white/80" onClick={onManageRecreos}><Clock className="size-4 mr-1" /> Recreos</Button>
         <Button variant="outline" className="flex-1 sm:flex-none border-blue-600 text-blue-700 hover:bg-blue-50 bg-white/80" onClick={descargarExcelCursoEstetico}><FileSpreadsheet className="size-4 mr-1" /> Excel</Button>
@@ -447,19 +450,19 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-[#0052cc]" label="Titular" />
         <Legend color="bg-[#cc0000]" label="Provisional" />
         <Legend color="bg-slate-900" label="Titular interino" />
-        <Legend color="bg-green-700" label="Suplente" />
+        <Legend color="bg-[#1b5e20]" label="Suplente" />
       </div>
       <span className="text-slate-600">Doble clic en los cuadrados para editarlos</span>
     </div>
 
-    {/* ZONA DE DESCARGA - CAPTURA CON FONDO INCLUIDO */}
-    <div ref={tableRef} className="relative w-full max-w-full bg-[url('/fondo.jpg')] bg-cover bg-center p-3 sm:p-8 rounded-2xl shadow-2xl print:shadow-none print:p-0 print:bg-none">
+    {/* ZONA DE DESCARGA - CAPTURA CON FONDO LIMPIO */}
+    <div ref={tableRef} className="relative w-full max-w-full bg-white p-4 sm:p-6 rounded-2xl shadow-xl print:shadow-none print:p-0">
       
       <div className="relative z-10 w-full min-w-[850px]">
         {/* ENCABEZADO TIPO IMAGEN INSTITUCIONAL */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 px-2">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Escudo E.E.S.T. N° 6" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
+            <img src={logo} alt="Escudo E.E.S.T. N° 6" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-sm" />
             <div className="flex flex-col">
               <span className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.25em] text-[#0b5c46]">E.E.S.T. N° 6 · Banfield</span>
               <div className="flex items-baseline gap-2 sm:gap-3">
@@ -493,7 +496,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         {/* GRILLA DEL CALENDARIO */}
         <div className="pb-2">
           {boundaries.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: `80px repeat(${selectedDays.length}, minmax(130px, 1fr))`, gridTemplateRows: `42px ${rowHeights.join(' ')}` }} className="border border-slate-200/60 bg-white/95 backdrop-blur-md rounded-xl overflow-hidden relative shadow-lg">
+            <div style={{ display: 'grid', gridTemplateColumns: `70px repeat(${selectedDays.length}, minmax(120px, 1fr))`, gridTemplateRows: `36px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-white rounded-xl overflow-hidden relative shadow-sm">
               
               {/* Cabeceras de Días (Verde oscuro) */}
               <div className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-[10px] uppercase tracking-widest shadow-inner z-30">
@@ -506,7 +509,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
               {/* Líneas de Grilla (Fondo) */}
               {selectedDays.map((day, dIdx) => (
                 boundaries.slice(0, -1).map((_, rIdx) => (
-                  <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100/60" />
+                  <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100" />
                 ))
               ))}
 
@@ -519,10 +522,10 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                  if (startIdx === -1 || endIdx === -1) return null;
                  
                  return (
-                   <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#fef9e7] z-0 flex items-center justify-center border-b border-slate-200 cursor-pointer">
+                   <div key={r.id} style={{ gridColumn: `2 / -1`, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} onDoubleClick={() => setEditing(r)} className="bg-[#fef9e7] z-0 flex items-center justify-center border-b border-t border-slate-100 cursor-pointer">
                      <div className="flex items-center gap-2 text-[#d35400] opacity-90">
                        <Coffee className="size-4" />
-                       <span className="text-xs sm:text-sm font-black uppercase tracking-[0.5em]">RECREO</span>
+                       <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.5em]">RECREO</span>
                      </div>
                    </div>
                  )
@@ -538,16 +541,16 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                 });
 
                 return (
-                  <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className={`border-r border-b border-slate-200 flex flex-col items-center justify-center p-1.5 font-mono z-20 ${isExplicitRecreo ? 'bg-[#fef9e7]' : 'bg-[#f8fafc]/80'}`}>
+                  <div key={`time-${rIdx}`} style={{ gridColumn: 1, gridRow: rIdx + 2 }} className={`border-r border-b border-slate-200 flex flex-col items-center justify-center p-1 font-mono z-20 ${isExplicitRecreo ? 'bg-[#fef9e7]' : 'bg-[#f8fafc]'}`}>
                     {isExplicitRecreo ? (
                       <>
-                        <span className="text-[#d35400] text-[13px] sm:text-[15px] font-black leading-none">{start}</span>
-                        <span className="text-[#e67e22] font-bold text-[9px] sm:text-[10px] leading-none mt-1">{end}</span>
+                        <span className="text-[#d35400] text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
+                        <span className="text-[#e67e22] font-bold text-[8px] sm:text-[9px] leading-none mt-1">{end}</span>
                       </>
                     ) : (
                       <>
-                        <span className="text-slate-800 text-[13px] sm:text-[15px] font-black leading-none">{start}</span>
-                        <span className="text-slate-400 font-bold text-[9px] sm:text-[10px] mt-1 leading-none">{end}</span>
+                        <span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
+                        <span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span>
                       </>
                     )}
                   </div>
@@ -564,7 +567,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                 if (startIdx === -1 || endIdx === -1 || colIdx < 2) return null;
                 
                 return (
-                  <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-1 z-10 relative">
+                  <div key={key} style={{ gridColumn: colIdx, gridRow: `${startIdx + 2} / ${endIdx + 2}` }} className="p-0.5 sm:p-1 z-10 relative">
                      <div className={`flex gap-1 h-full w-full ${blocksInCell.length > 1 ? 'flex-row' : 'flex-col'}`}>
                         {blocksInCell.map((b: Block) => (
                            <div key={b.id} className="flex-1 min-w-0 h-full w-full">
@@ -577,7 +580,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
               })}
             </div>
           ) : (
-            <div className="p-10 text-center text-slate-500 font-semibold border-2 border-dashed border-slate-300 rounded-xl bg-white/50 backdrop-blur-sm">No hay horarios cargados para este curso.</div>
+            <div className="p-10 text-center text-slate-500 font-semibold border-2 border-dashed border-slate-300 rounded-xl bg-slate-50">No hay horarios cargados para este curso.</div>
           )}
         </div>
       </div>
@@ -639,23 +642,23 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-1.5 sm:p-2 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition bg-white border-l-[5px] ${block.tipo === 'Teoría' ? 'border-l-[#388e3c]' : 'border-l-slate-400'}`}>
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-1.5 flex flex-col h-full w-full overflow-hidden relative shadow-sm hover:shadow-md transition bg-white border-l-[5px] sm:border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#0b5c46]' : 'border-l-slate-400'}`}>
     <div className="flex-1 min-h-0 flex flex-col justify-between">
       <div className="flex flex-col gap-0.5 items-start w-full">
-        {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5">{block.grupo}</span>}
-        <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-tight text-[#1b5014] break-words whitespace-normal w-full leading-[1.15]">{block.materia}</p>
+        {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
+        <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-tight text-[#0b5c46] break-words whitespace-normal w-full leading-[1.1]">{block.materia}</p>
       </div>
       
-      <div className="mt-1">
+      <div className="mt-auto pt-0.5">
         <div className="flex flex-col">
-          {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[12px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
+          {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[11px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
           <span className="text-[8px] sm:text-[9px] font-mono font-bold text-slate-400 mt-0.5">{block.horario}</span>
         </div>
       </div>
     </div>
     {block.suplente && (
-      <div className="mt-1 rounded px-1 text-[9px] font-bold text-green-700 shrink-0 break-words uppercase whitespace-normal leading-tight">
-        Sup: {block.suplente}
+      <div className="mt-0.5 rounded bg-[#e8f5e9] px-1 py-0.5 text-[9px] sm:text-[10px] font-black text-[#1b5e20] border border-[#c8e6c9] shrink-0 break-words uppercase whitespace-normal leading-tight">
+        SUP: {block.suplente}
       </div>
     )}
   </div> 
@@ -1083,14 +1086,8 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
       </div>
     </div>
     
-    <div ref={paroRef} className="flex flex-col gap-4 p-4 sm:p-6 rounded-2xl border border-[#d7e8c9] bg-white/95 backdrop-blur-md shadow-2xl print:p-0 print:border-none print:shadow-none relative overflow-hidden">
+    <div ref={paroRef} className="flex flex-col gap-4 p-4 sm:p-6 rounded-2xl border border-slate-200 bg-white shadow-xl print:p-0 print:border-none print:shadow-none relative overflow-hidden">
       
-      {/* FONDO IMAGEN PARA EL REPORTE */}
-      <div 
-        className="absolute inset-0 z-0 pointer-events-none opacity-20 print:opacity-10" 
-        style={{ backgroundImage: "url('/fondo.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} 
-      />
-
       <div className="relative z-10 flex items-center justify-between border-b border-[#0b5c46]/20 pb-4">
         <div className="flex items-center gap-4">
           <img src={logo} alt="Escudo E.E.S.T. N° 6" className="size-14 sm:size-16 object-contain drop-shadow-md" />
@@ -1100,7 +1097,7 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
             <p className="text-sm font-bold text-[#0b5c46] mt-0.5">{date} ({nombreDiaSemana})</p>
           </div>
         </div>
-        <div className="text-right text-xs font-semibold text-slate-700 bg-white/50 p-2 rounded-xl border border-white">
+        <div className="text-right text-xs font-semibold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-100">
           <div>Curso filtrado: <strong className="text-slate-900 text-sm block">{cursoFiltro}</strong></div>
         </div>
       </div>
@@ -1112,7 +1109,7 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
       </div>
 
       {!esFinDeSemana && preceptoresDelDia.length > 0 && (
-        <div className="relative z-10 overflow-hidden rounded-xl border border-[#0b5c46]/30 shadow-sm bg-white/80">
+        <div className="relative z-10 overflow-hidden rounded-xl border border-[#0b5c46]/30 shadow-sm bg-white">
           <div className="border-b bg-[#0b5c46]/10 p-3">
             <h3 className="font-black text-sm text-[#0b5c46] flex items-center gap-2"><UserCheck className="size-4"/> Control de Preceptores</h3>
           </div>
@@ -1149,7 +1146,7 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
         </div>
       )}
 
-      <div className="relative z-10 overflow-hidden rounded-xl border border-[#0b5c46]/30 shadow-sm bg-white/80">
+      <div className="relative z-10 overflow-hidden rounded-xl border border-[#0b5c46]/30 shadow-sm bg-white">
         <div className="border-b bg-[#0b5c46]/10 p-3">
           <h3 className="font-black text-sm text-[#0b5c46] flex items-center gap-2"><Users className="size-4"/> Registro de Paro Docente</h3>
         </div>
