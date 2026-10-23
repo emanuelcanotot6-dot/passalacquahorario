@@ -96,7 +96,6 @@ export default function Page() {
 
   const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
   
-  // ORDEN ALFABÉTICO Y COMBINACIÓN DE DOCENTES DE HORARIOS Y AUSENCIAS
   const teachers = useMemo(() => {
     const allTeachers = [
       ...blocks.flatMap((b: Block) => [b.docente, b.suplente]),
@@ -250,7 +249,6 @@ export default function Page() {
 
   return (
     <>
-      {/* CAPA DE FONDO FIJA Y ADAPTABLE 100% */}
       <div className="fixed inset-0 w-full h-[100dvh] -z-10 bg-[url('/fondo.jpg')] bg-cover bg-center bg-no-repeat pointer-events-none opacity-90" />
       
       <div className="min-h-screen text-slate-950 flex flex-col">
@@ -341,8 +339,6 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
     return h * 60 + m;
   }
 
-  // USO DE MINMAX PARA EVITAR RECORTES:
-  // Se usa minmax(altura_ideal, auto) para que si el texto es muy largo la caja se expanda sola hacia abajo
   const rowHeights = boundaries.slice(0, -1).map((start, i) => {
     const end = boundaries[i + 1];
     const dur = timeToMins(end) - timeToMins(start);
@@ -466,16 +462,14 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
         <Legend color="bg-[#0052cc]" label="Titular" />
         <Legend color="bg-[#cc0000]" label="Provisional" />
         <Legend color="bg-slate-900" label="Titular interino" />
-        <Legend color="bg-[#0b5c46]" label="Suplente" />
+        <Legend color="bg-[#1b5e20]" label="Suplente" />
       </div>
       <span className="text-slate-600">Doble clic en los cuadrados para editarlos</span>
     </div>
 
-    {/* ZONA DE DESCARGA - FONDO BLANCO PURO AL DESCARGAR */}
     <div ref={tableRef} className="relative w-full max-w-full bg-white p-4 sm:p-6 rounded-2xl shadow-xl print:shadow-none print:p-0">
       
       <div className="relative z-10 w-full min-w-[850px]">
-        {/* ENCABEZADO TIPO IMAGEN INSTITUCIONAL */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 px-2">
           <div className="flex items-center gap-4">
             <img src={logo} alt="Escudo E.E.S.T. N° 6" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-sm" />
@@ -509,12 +503,10 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
           </div>
         </div>
 
-        {/* GRILLA DEL CALENDARIO */}
         <div className="pb-2">
           {boundaries.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: `70px repeat(${selectedDays.length}, minmax(130px, 1fr))`, gridTemplateRows: `36px ${rowHeights.join(' ')}` }} className="border border-slate-200 bg-white rounded-xl overflow-hidden relative shadow-sm">
               
-              {/* Cabeceras de Días (Verde oscuro) */}
               <div className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-[10px] uppercase tracking-widest shadow-inner z-30">
                 <Clock className="size-4 mr-1.5 opacity-80" /> HORARIO
               </div>
@@ -522,14 +514,12 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                 <div key={d} style={{ gridColumn: i + 2, gridRow: 1 }} className="border-r border-b border-white/20 bg-[#0b5c46] p-2 flex items-center justify-center font-black text-white text-xs uppercase tracking-[0.2em] shadow-inner z-30">{d}</div>
               ))}
 
-              {/* Líneas de Grilla (Fondo) */}
               {selectedDays.map((day, dIdx) => (
                 boundaries.slice(0, -1).map((_, rIdx) => (
                   <div key={`cell-${dIdx}-${rIdx}`} style={{ gridColumn: dIdx + 2, gridRow: rIdx + 2 }} className="border-r border-b border-slate-100" />
                 ))
               ))}
 
-              {/* Recreos (Tiras de fondo amarillo claro y texto naranja central) */}
               {recreos.map(r => {
                  const m = r.horario.match(timePattern);
                  if (!m) return null;
@@ -547,7 +537,6 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                  )
               })}
 
-              {/* Etiquetas de Tiempo (Eje Y) */}
               {boundaries.slice(0, -1).map((start, rIdx) => {
                 const end = boundaries[rIdx + 1];
                 
@@ -565,7 +554,7 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                       </>
                     ) : (
                       <>
-                        <span className="text-[#0b5c46] text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
+                        <span className="text-slate-800 text-[11px] sm:text-[13px] font-black leading-none">{start}</span>
                         <span className="text-slate-400 font-bold text-[8px] sm:text-[9px] mt-1 leading-none">{end}</span>
                       </>
                     )}
@@ -573,7 +562,6 @@ function ScheduleView({ course, setCourse, filter, setFilter, selectedDays, setS
                 )
               })}
 
-              {/* Bloques de Materias Proporcionales (Expansibles) */}
               {Object.entries(cellGroups).map(([key, blocksInCell]) => {
                 const [dia, start, end] = key.split('_');
                 const startIdx = boundaries.indexOf(start);
@@ -658,27 +646,23 @@ function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
 function BlockCard({ block, onDoubleClick }: { block: Block; onDoubleClick: () => void }) { 
   const statusColorClass = block.situacionRevista === 'Titular' ? 'text-[#0052cc]' : block.situacionRevista === 'Provisional' ? 'text-[#cc0000]' : 'text-slate-900'
 
-  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border border-slate-200 p-2 sm:p-2.5 flex flex-col w-full h-full relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] ${block.tipo === 'Teoría' ? 'border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-l-slate-400 bg-slate-100'}`}>
-    
-    <div className="flex flex-col gap-1 items-start w-full">
-      {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
+  return <div onDoubleClick={onDoubleClick} className={`group cursor-pointer rounded-lg border p-1.5 flex flex-col h-full w-full overflow-y-auto overflow-x-hidden scrollbar-none relative shadow-sm hover:shadow-md transition border-l-[4px] sm:border-l-[6px] min-h-max ${block.tipo === 'Teoría' ? 'border-[#8ebf42]/40 border-l-[#0b5c46] bg-[#f4fbe8]' : 'border-slate-300 border-l-slate-400 bg-slate-100'}`}>
+    <div className="flex-1 flex flex-col justify-between">
+      <div className="flex flex-col gap-0.5 items-start w-full">
+        {block.grupo && <span className="rounded bg-[#0b5c46] px-1 py-0.5 text-[7px] sm:text-[8px] font-black text-white shrink-0 uppercase mb-0.5 shadow-sm leading-none">{block.grupo}</span>}
+        <p className={`text-[8.5px] sm:text-[11px] font-black uppercase tracking-tight break-words whitespace-normal w-full leading-[1.1] ${block.tipo === 'Teoría' ? 'text-[#0b5c46]' : 'text-[#0b5c46]'}`}>{block.materia}</p>
+      </div>
       
-      <p className={`text-[10px] sm:text-[11px] font-black uppercase tracking-tight break-words whitespace-normal w-full leading-tight text-[#0b5c46]`}>{block.materia}</p>
-      
-      <div className="flex flex-col mt-0.5">
-        {block.docente ? <span className={`${statusColorClass} text-[10px] sm:text-[11.5px] font-black uppercase leading-tight break-words`}>{block.docente}</span> : <span className="text-[10px] text-slate-300 font-bold uppercase">Sin docente</span>}
-        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-slate-400 mt-0.5">{block.horario}</span>
+      <div className="mt-1 pt-0.5">
+        <div className="flex flex-col">
+          {block.docente ? <span className={`${statusColorClass} text-[9px] sm:text-[11px] font-black uppercase leading-[1.1] break-words`}>{block.docente}</span> : <span className="text-[9px] text-slate-400 font-bold uppercase">Sin docente</span>}
+          <span className="text-[7.5px] sm:text-[9px] font-mono font-bold text-slate-500 mt-0.5">{block.horario}</span>
+        </div>
       </div>
     </div>
-
     {block.suplente && (
-      <div className="mt-1.5 inline-block w-fit rounded-full bg-[#dcfce7] px-2 py-0.5 border border-[#86efac]">
-        <span className="text-[8px] sm:text-[9px] font-bold text-[#166534] uppercase leading-tight block text-center">
-          Suplente
-        </span>
-        <div className="text-[9px] sm:text-[10px] font-black text-[#14532d] uppercase mt-0.5 break-words whitespace-normal leading-tight text-center">
-          {block.suplente}
-        </div>
+      <div className="mt-0.5 rounded bg-white px-1 py-0.5 text-[8px] sm:text-[10px] font-black text-[#1b5e20] border border-[#c8e6c9] shrink-0 break-words uppercase whitespace-normal leading-tight">
+        SUP: {block.suplente}
       </div>
     )}
   </div> 
@@ -693,8 +677,10 @@ function TeacherView({ query, setQuery, teachers, results, setEditing, ausencias
   const filtered = results.filter((b: Block) => status === 'Todos' || (status === 'Suplentes' ? b.suplente?.toLowerCase().includes(query.toLowerCase()) : b.situacionRevista === status))
   const selected = query ? query : 'Todos los docentes' 
 
-  // Filtrar las ausencias o coberturas donde aparece este docente específico
-  const ausenciasDelDocente = ausencias.filter((a: AusenciaRecord) => a.docenteAusente === selected || a.docenteDecreto === selected)
+  // Filtrar las ausencias o coberturas donde aparece este docente específico + ORDENAR CRONOLÓGICAMENTE
+  const ausenciasDelDocente = ausencias
+    .filter((a: AusenciaRecord) => a.docenteAusente === selected || a.docenteDecreto === selected)
+    .sort((a: AusenciaRecord, b: AusenciaRecord) => (b.fecha || '').localeCompare(a.fecha || ''))
 
   return <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
     <aside className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 shadow-sm h-fit">
@@ -824,6 +810,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
     }
   }, [claseSeleccionada, blocks])
 
+  // FILTRO Y ORDENAMIENTO CRONOLÓGICO DE LA TABLA
   const ausenciasFiltradas = ausencias.filter((a: AusenciaRecord) => {
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
     const matchDocente = !docenteFiltro || a.docenteAusente.toLowerCase().includes(docenteFiltro.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(docenteFiltro.toLowerCase())
@@ -833,6 +820,8 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
       matchFecha = a.fecha >= fechaDesde && a.fecha <= fechaHasta
     }
     return matchCurso && matchDocente && matchFecha
+  }).sort((a: AusenciaRecord, b: AusenciaRecord) => {
+    return (b.fecha || '').localeCompare(a.fecha || '')
   })
 
   const totalAusencias = ausenciasFiltradas.length
