@@ -88,8 +88,13 @@ export default function Page() {
 
   useEffect(() => { syncSpreadsheet() }, [])
 
+  const courseTimes = useMemo(() => {
+    const courseBlocks = blocks.filter((b: Block) => b.curso === course)
+    const timesSet = new Set(courseBlocks.map((b: Block) => b.horario))
+    return Array.from(timesSet).sort((a: string, b: string) => a.localeCompare(b))
+  }, [blocks, course])
+
   const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
-  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
   
   const teachers = useMemo(() => {
     const allTeachers = [
@@ -98,6 +103,9 @@ export default function Page() {
     ].filter(Boolean).map(t => t!.trim());
     return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
   }, [blocks, ausencias])
+
+  const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
+  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
     setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b))
@@ -598,9 +606,9 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
 
       {selected !== 'Todos los docentes' && ausenciasDelDocente.length > 0 && (
         <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden mt-2">
-          <div className="border-b p-4 bg-red-50/50 flex flex-wrap gap-4 justify-between items-center">
+          <div className="border-b border-white/20 p-4 bg-slate-50/80 flex flex-wrap gap-4 justify-between items-center">
             <div>
-              <h3 className="font-black text-base text-red-900">Ausencias y Coberturas Registradas</h3>
+              <h3 className="font-black text-base text-[#0b5c46]">Ausencias y Coberturas Registradas</h3>
               <p className="text-xs text-slate-500">Historial de faltas o suplencias por decreto de este docente.</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')} className="bg-white">
@@ -610,25 +618,34 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-red-900/10 text-xs uppercase tracking-wider text-red-900">
+              <thead className="bg-slate-100/80 text-xs uppercase tracking-wider text-slate-700">
                 <tr><th className="p-3">Fecha</th><th>Curso</th><th>Materia</th><th>Rol en el registro</th><th>Estado de cobertura</th></tr>
               </thead>
               <tbody>
-                {ausenciasDelDocente.map((a: AusenciaRecord) => (
-                  <tr key={a.id} className="border-t border-slate-100 hover:bg-slate-50 transition">
-                    <td className="p-3 font-bold">{a.fecha}</td>
-                    <td className="font-bold text-[#0b5c46]">{a.curso}</td>
-                    <td>{a.materia}</td>
-                    <td>
-                      {isExact && a.docenteAusente === query ? (
-                        <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-full text-xs border border-red-200">Ausente</span>
-                      ) : (
-                        <span className="text-green-700 font-bold bg-green-50 px-2 py-1 rounded-full text-xs border border-green-200">Cubre por Decreto</span>
-                      )}
-                    </td>
-                    <td><span className={`text-xs font-bold ${a.estadoCobertura === 'Cubierto por Decreto' ? 'text-green-700' : 'text-red-700'}`}>{a.estadoCobertura}</span></td>
-                  </tr>
-                ))}
+                {ausenciasDelDocente.map((a: AusenciaRecord) => {
+                  const isAusente = isExact ? a.docenteAusente === query : a.docenteAusente.toLowerCase().includes(query.toLowerCase());
+                  return (
+                    <tr key={a.id} className={`border-t transition ${isAusente ? 'border-red-100/50 bg-red-50/30 hover:bg-red-50' : 'border-green-100/50 bg-green-50/40 hover:bg-green-100'}`}>
+                      <td className="p-3 font-bold">{a.fecha}</td>
+                      <td className={`font-bold ${isAusente ? 'text-[#0b5c46]' : 'text-green-800'}`}>{a.curso}</td>
+                      <td>{a.materia}</td>
+                      <td>
+                        {isAusente ? (
+                          <span className="text-red-600 font-bold bg-white px-2 py-1 rounded-full text-xs border border-red-200 shadow-sm">Falta</span>
+                        ) : (
+                          <span className="text-green-700 font-bold bg-white px-2 py-1 rounded-full text-xs border border-green-300 shadow-sm">Cubre por Decreto</span>
+                        )}
+                      </td>
+                      <td>
+                        {isAusente ? (
+                          <span className={`text-xs font-bold ${a.estadoCobertura === 'Cubierto por Decreto' ? 'text-green-700' : 'text-red-700'}`}>{a.estadoCobertura}</span>
+                        ) : (
+                          <span className="text-xs font-bold text-slate-500">Reemplaza a {a.docenteAusente}</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
