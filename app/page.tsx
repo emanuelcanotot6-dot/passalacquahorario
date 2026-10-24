@@ -525,26 +525,27 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   
   const isExact = teachers.includes(query)
-  const baseBlocks = isExact 
-    ? blocks.filter((b: Block) => b.docente === query || b.suplente === query)
-    : blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
   
-  const filtered = baseBlocks.filter((b: Block) => {
-    if (status === 'Todos') return true;
-    if (status === 'Suplentes') return isExact ? b.suplente === query : b.suplente?.toLowerCase().includes(query.toLowerCase());
-    return isExact ? b.situacionRevista === status && b.docente === query : b.situacionRevista === status;
-  })
+  const filtered = isExact 
+    ? blocks.filter((b: Block) => {
+        const match = b.docente === query || b.suplente === query;
+        if (!match) return false;
+        if (status === 'Todos') return true;
+        if (status === 'Suplentes') return b.suplente === query;
+        return b.situacionRevista === status && b.docente === query;
+      })
+    : []
+  
+  const selected = isExact ? query : (query ? 'Seleccioná un docente de la lista lateral' : 'Todos los docentes')
 
-  const selected = query ? query : 'Todos los docentes' 
-
-  const ausenciasDelDocente = ausencias
-    .filter((a: AusenciaRecord) => isExact 
-       ? (a.docenteAusente === query || a.docenteDecreto === query)
-       : (a.docenteAusente.toLowerCase().includes(query.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(query.toLowerCase())))
-    .sort((a: AusenciaRecord, b: AusenciaRecord) => {
-      if (sortOrder === 'desc') return (b.fecha || '').localeCompare(a.fecha || '')
-      return (a.fecha || '').localeCompare(b.fecha || '')
-    })
+  const ausenciasDelDocente = isExact
+    ? ausencias
+        .filter((a: AusenciaRecord) => a.docenteAusente === query || a.docenteDecreto === query)
+        .sort((a: AusenciaRecord, b: AusenciaRecord) => {
+          if (sortOrder === 'desc') return (b.fecha || '').localeCompare(a.fecha || '')
+          return (a.fecha || '').localeCompare(b.fecha || '')
+        })
+    : []
 
   return <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
     <aside className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 shadow-sm h-fit">
@@ -563,48 +564,55 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat label="Bloques semanales" value={filtered.length} icon={<CalendarDays />} />
         <Stat label="Cursos asignados" value={new Set(filtered.map((b: Block) => b.curso)).size} icon={<Users />} />
-        <Stat label="Como titular" value={filtered.filter((b: Block) => b.situacionRevista === 'Titular' && (isExact ? b.docente === query : true)).length} icon={<ShieldCheck />} />
-        <Stat label="Como suplente" value={filtered.filter((b: Block) => b.suplente && (isExact ? b.suplente === query : true)).length} icon={<Check />} />
+        <Stat label="Como titular" value={filtered.filter((b: Block) => b.situacionRevista === 'Titular' && b.docente === query).length} icon={<ShieldCheck />} />
+        <Stat label="Como suplente" value={filtered.filter((b: Block) => b.suplente && b.suplente === query).length} icon={<Check />} />
       </div>
       
       <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
           <div>
             <h3 className="font-black text-lg text-[#0b5c46]">{selected}</h3>
-            <p className="text-xs text-slate-500">{filtered.length} bloques encontrados en el horario semanal</p>
+            <p className="text-xs text-slate-500">
+              {isExact ? `${filtered.length} bloques encontrados en el horario semanal` : 'Buscá y hacé clic en un nombre de la lista lateral'}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {['Todos', 'Titular', 'Provisional', 'Titular Interino', 'Suplentes'].map((x) => (
-              <button key={x} onClick={() => setStatus(x)} className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${status === x ? 'bg-[#0b5c46] text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{x}</button>
-            ))}
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
-              <tr><th className="p-3">Curso</th><th>Materia</th><th>Día / horario</th><th>Tipo</th><th>Situación</th><th /></tr>
-            </thead>
-            <tbody>
-              {filtered.map((b: Block) => (
-                <tr key={b.id} onDoubleClick={() => setEditing(b)} className="border-t border-slate-100 hover:bg-[#f4faed] cursor-pointer transition">
-                  <td className="p-3 font-bold">{b.curso} {b.grupo && <span className="text-xs font-normal text-slate-500">({b.grupo})</span>}</td>
-                  <td className="font-bold text-[#1b5014]">{b.materia}<div className="text-xs text-slate-600 font-semibold">{b.docente}</div></td>
-                  <td>{b.dia}<div className="font-mono text-xs text-slate-500">{b.horario}</div></td>
-                  <td><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{b.tipo}</span></td>
-                  <td>
-                    <span className={`text-xs font-bold ${b.suplente === query || (b.suplente && !isExact) ? 'text-green-700' : (statusStyle[b.situacionRevista] || 'text-slate-600')}`}>
-                      {b.suplente === query || (b.suplente && !isExact) ? 'Suplente' : b.situacionRevista}
-                    </span>
-                  </td>
-                  <td><Pencil className="size-4 text-slate-400" /></td>
-                </tr>
+          {isExact && (
+            <div className="flex flex-wrap gap-1">
+              {['Todos', 'Titular', 'Provisional', 'Titular Interino', 'Suplentes'].map((x) => (
+                <button key={x} onClick={() => setStatus(x)} className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${status === x ? 'bg-[#0b5c46] text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{x}</button>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
+        
+        {isExact && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
+                <tr><th className="p-3">Curso</th><th>Materia</th><th>Día / horario</th><th>Tipo</th><th>Situación</th><th /></tr>
+              </thead>
+              <tbody>
+                {filtered.map((b: Block) => (
+                  <tr key={b.id} onDoubleClick={() => setEditing(b)} className="border-t border-slate-100 hover:bg-[#f4faed] cursor-pointer transition">
+                    <td className="p-3 font-bold">{b.curso} {b.grupo && <span className="text-xs font-normal text-slate-500">({b.grupo})</span>}</td>
+                    <td className="font-bold text-[#1b5014]">{b.materia}<div className="text-xs text-slate-600 font-semibold">{b.docente}</div></td>
+                    <td>{b.dia}<div className="font-mono text-xs text-slate-500">{b.horario}</div></td>
+                    <td><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{b.tipo}</span></td>
+                    <td>
+                      <span className={`text-xs font-bold ${b.suplente === query ? 'text-green-700' : (statusStyle[b.situacionRevista] || 'text-slate-600')}`}>
+                        {b.suplente === query ? 'Suplente' : b.situacionRevista}
+                      </span>
+                    </td>
+                    <td><Pencil className="size-4 text-slate-400" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {selected !== 'Todos los docentes' && ausenciasDelDocente.length > 0 && (
+      {isExact && ausenciasDelDocente.length > 0 && (
         <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden mt-2">
           <div className="border-b border-white/20 p-4 bg-slate-50/80 flex flex-wrap gap-4 justify-between items-center">
             <div>
@@ -623,7 +631,7 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
               </thead>
               <tbody>
                 {ausenciasDelDocente.map((a: AusenciaRecord) => {
-                  const isAusente = isExact ? a.docenteAusente === query : a.docenteAusente.toLowerCase().includes(query.toLowerCase());
+                  const isAusente = a.docenteAusente === query;
                   return (
                     <tr key={a.id} className={`border-t transition ${isAusente ? 'border-red-100/50 bg-red-50/30 hover:bg-red-50' : 'border-green-100/50 bg-green-50/40 hover:bg-green-100'}`}>
                       <td className="p-3 font-bold">{a.fecha}</td>
