@@ -112,7 +112,7 @@ export default function Page() {
     const allTeachers = [
       ...blocks.flatMap((b: Block) => [b.docente, b.suplente]),
       ...ausencias.flatMap((a: AusenciaRecord) => [a.docenteAusente, a.docenteDecreto])
-    ].filter(Boolean);
+    ].filter(Boolean).map(t => t!.trim());
     return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
   }, [blocks, ausencias])
 
@@ -122,9 +122,7 @@ export default function Page() {
   function updateBlock(next: Block) { 
     setBlocks((current) => {
       const old = current.find(b => b.id === next.id);
-      
       if (old) {
-        // Bloque existente: Actualizamos y registramos altas/bajas
         const oldSup = (old.suplente || '').trim().toUpperCase();
         const newSup = (next.suplente || '').trim().toUpperCase();
         const today = new Date().toISOString().split('T')[0];
@@ -139,15 +137,12 @@ export default function Page() {
           }
           if (newRecords.length > 0) {
             setHistorialSuplencias(prev => [...newRecords, ...prev]);
+            setDirty(n => n + 1);
           }
         }
-        return current.map((b: Block) => b.id === next.id ? next : b);
-      } else {
-        // Bloque nuevo: Simplemente lo agregamos sin multiplicar
-        return [...current, next];
       }
+      return current.map((b: Block) => b.id === next.id ? next : b);
     });
-
     setEditing(null);
     setDirty((n) => n + 1); 
   }
@@ -178,8 +173,8 @@ export default function Page() {
       
       if (Array.isArray(rows) && rows.length) {
         const normalized = rows.map((row: any, index: number) => {
-          const doc = String(read(row, 'docente', 'Docente') || '')
-          let sit = String(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista') || '')
+          const doc = String(read(row, 'docente', 'Docente') || '').trim()
+          let sit = String(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista') || '').trim()
           if (!sit) sit = doc.toUpperCase().includes('TI 2026') ? 'Titular Interino' : 'Titular'
           return { 
             id: String(read(row, 'id', 'ID') || index + 1), 
@@ -190,7 +185,7 @@ export default function Page() {
             horario: String(read(row, 'horario', 'Horario') || ''), 
             materia: String(read(row, 'materia', 'Materia') || ''), 
             docente: doc, situacionRevista: sit as Status, 
-            suplente: String(read(row, 'suplente', 'Suplente') || ''), 
+            suplente: String(read(row, 'suplente', 'Suplente') || '').trim(), 
             grupo: String(read(row, 'grupo', 'Grupo') || '') 
           }
         })
@@ -202,11 +197,11 @@ export default function Page() {
           id: String(read(a, 'id', 'ID') || `AUS-${index + 1}`),
           curso: String(read(a, 'curso', 'Curso') || '1°1°'),
           mes: String(read(a, 'mes', 'Mes') || 'Octubre'),
-          fecha: String(read(a, 'fecha', 'Fecha', 'Fecha / Horario') || '').split('T')[0],
+          fecha: String(read(a, 'fecha', 'Fecha', 'Fecha / Horario') || new Date().toISOString().split('T')[0]),
           materia: String(read(a, 'materia', 'Materia') || ''),
-          docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || ''),
+          docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || '').trim(),
           estadoCobertura: (read(a, 'estadoCobertura', 'Estado Cobertura') || 'Sin cubrir') as CoberturaStatus,
-          docenteDecreto: String(read(a, 'docenteDecreto', 'Docente Decreto', 'PF Cubre por Decreto / Observación') || 'Sin cubrir')
+          docenteDecreto: String(read(a, 'docenteDecreto', 'Docente Decreto', 'PF Cubre por Decreto / Observación') || 'Sin cubrir').trim()
         }))
         setAusencias(normAus)
       }
@@ -214,8 +209,8 @@ export default function Page() {
       if (payload.preceptores && Array.isArray(payload.preceptores)) {
         const normPrec = payload.preceptores.map((p: any) => ({
           curso: String(read(p, 'curso', 'Curso') || ''),
-          preceptorTitular: String(read(p, 'preceptorTitular', 'Preceptor Titular') || ''),
-          preceptorSuplente: String(read(p, 'preceptorSuplente', 'Preceptor Suplente') || '')
+          preceptorTitular: String(read(p, 'preceptorTitular', 'Preceptor Titular') || '').trim(),
+          preceptorSuplente: String(read(p, 'preceptorSuplente', 'Preceptor Suplente') || '').trim()
         }))
         if (normPrec.some((p: PreceptorAssignment) => p.preceptorTitular || p.preceptorSuplente)) {
           setPreceptores(normPrec)
@@ -225,11 +220,11 @@ export default function Page() {
       if (payload.paroHistorial && Array.isArray(payload.paroHistorial)) {
         const normParo = payload.paroHistorial.map((p: any, index: number) => ({
           id: String(read(p, 'id', 'ID') || `PARO-${index + 1}`),
-          fecha: String(read(p, 'fecha', 'Fecha') || '').split('T')[0],
+          fecha: String(read(p, 'fecha', 'Fecha') || new Date().toISOString().split('T')[0]),
           curso: String(read(p, 'curso', 'Curso') || ''),
           horario: String(read(p, 'horario', 'Horario') || ''),
           materia: String(read(p, 'materia', 'Materia') || ''),
-          docente: String(read(p, 'docente', 'Docente') || ''),
+          docente: String(read(p, 'docente', 'Docente') || '').trim(),
           estadoParo: (read(p, 'estadoParo', 'Estado Paro') || 'normal') as Attendance,
           observaciones: String(read(p, 'observaciones', 'Observaciones') || ''),
           tipoPersonal: (read(p, 'tipoPersonal', 'Tipo Personal') || 'docente') as 'docente' | 'preceptor',
@@ -241,7 +236,7 @@ export default function Page() {
       if (payload.historialSuplencias && Array.isArray(payload.historialSuplencias)) {
         const normSup = payload.historialSuplencias.map((s: any, index: number) => ({
           id: String(read(s, 'id', 'ID') || `HS-${index + 1}`),
-          fecha: String(read(s, 'fecha', 'Fecha') || '').split('T')[0],
+          fecha: String(read(s, 'fecha', 'Fecha') || ''),
           curso: String(read(s, 'curso', 'Curso') || ''),
           materia: String(read(s, 'materia', 'Materia') || ''),
           titular: String(read(s, 'titular', 'Titular') || ''),
@@ -265,7 +260,7 @@ export default function Page() {
     try { 
       await fetch(spreadsheetApi, { 
         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ action: 'replace', rows: blocks, ausencias, preceptores, paroHistorial, historialSuplencias }) 
+        body: JSON.stringify({ action: 'replace', rows: blocks.map(({ id, ...row }) => row), ausencias, preceptores, paroHistorial, historialSuplencias }) 
       }) 
       setSaved(true); setDirty(0); setSyncMessage('Guardado en Google Drive') 
       setTimeout(() => setSaved(false), 2600) 
@@ -312,7 +307,7 @@ export default function Page() {
                 <p className="mt-1 text-xs sm:text-sm text-slate-600">Actualización activa · {syncMessage}</p>
               </div>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save} disabled={syncing || saved}>
+                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save}>
                   {saved ? <Check data-icon="inline-start" /> : <Cloud data-icon="inline-start" />}
                   {saved ? 'Guardado' : dirty ? `Guardar (${dirty})` : 'Guardar cambios'}
                 </Button>
@@ -766,7 +761,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
 
   const ausenciasFiltradas = ausencias.filter((a: AusenciaRecord) => {
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
-    const matchDocente = !docenteFiltro || (a.docenteAusente || '').toLowerCase().includes(docenteFiltro.toLowerCase()) || (a.docenteDecreto || '').toLowerCase().includes(docenteFiltro.toLowerCase())
+    const matchDocente = !docenteFiltro || a.docenteAusente.toLowerCase().includes(docenteFiltro.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(docenteFiltro.toLowerCase())
     let matchFecha = true
     if (modoFecha === 'rango' && a.fecha && a.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
       matchFecha = a.fecha >= fechaDesde && a.fecha <= fechaHasta
@@ -1231,34 +1226,11 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
 }
 
 function SuplenciasView({ historial, setHistorial, setDirty }: any) {
-  const [query, setQuery] = useState('')
-
-  const filtrados = (historial || []).filter((h: any) => 
-    !query || 
-    (h.suplente || '').toLowerCase().includes(query.toLowerCase()) ||
-    (h.titular || '').toLowerCase().includes(query.toLowerCase()) ||
-    (h.curso || '').toLowerCase().includes(query.toLowerCase()) ||
-    (h.materia || '').toLowerCase().includes(query.toLowerCase())
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h3 className="font-black text-lg text-[#0b5c46]">Registro de Altas y Bajas de Suplentes</h3>
-            <p className="text-sm text-slate-500 mt-1">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
-          </div>
-          <div className="relative w-full sm:w-72 shrink-0">
-            <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
-            <input 
-              value={query} 
-              onChange={(e) => setQuery(e.target.value)} 
-              placeholder="Buscar docente o curso..." 
-              className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" 
-            />
-          </div>
-        </div>
+        <h3 className="font-black text-lg text-[#0b5c46] mb-4">Registro de Altas y Bajas de Suplentes</h3>
+        <p className="text-sm text-slate-500 mb-6">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
         
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full min-w-[700px] text-left text-sm">
@@ -1266,10 +1238,10 @@ function SuplenciasView({ historial, setHistorial, setDirty }: any) {
               <tr><th className="p-3">Fecha</th><th>Acción</th><th>Suplente</th><th>Titular reemplazado</th><th>Curso</th><th>Materia</th><th/></tr>
             </thead>
             <tbody>
-              {filtrados.length === 0 ? (
-                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No se encontraron registros con esa búsqueda.</td></tr>
+              {historial.length === 0 ? (
+                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No hay altas o bajas registradas aún.</td></tr>
               ) : (
-                filtrados.map((h: any) => (
+                historial.map((h: any) => (
                   <tr key={h.id} className="border-t border-slate-100 hover:bg-[#f4faed] transition">
                     <td className="p-3 font-bold">{h.fecha}</td>
                     <td>
