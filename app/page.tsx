@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbzzoAb2u-IXEVR0nX3BfU-5axB7ZnafLzubY5NvGd6BbUffq2XY4jAZDNpy0eWSjpc9/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -1226,11 +1226,34 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
 }
 
 function SuplenciasView({ historial, setHistorial, setDirty }: any) {
+  const [query, setQuery] = useState('')
+
+  const filtrados = historial.filter((h: any) => 
+    !query || 
+    h.suplente.toLowerCase().includes(query.toLowerCase()) ||
+    h.titular.toLowerCase().includes(query.toLowerCase()) ||
+    h.curso.toLowerCase().includes(query.toLowerCase()) ||
+    h.materia.toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl">
-        <h3 className="font-black text-lg text-[#0b5c46] mb-4">Registro de Altas y Bajas de Suplentes</h3>
-        <p className="text-sm text-slate-500 mb-6">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="font-black text-lg text-[#0b5c46]">Registro de Altas y Bajas de Suplentes</h3>
+            <p className="text-sm text-slate-500 mt-1">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
+          </div>
+          <div className="relative w-full sm:w-72 shrink-0">
+            <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
+            <input 
+              value={query} 
+              onChange={(e) => setQuery(e.target.value)} 
+              placeholder="Buscar docente o curso..." 
+              className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" 
+            />
+          </div>
+        </div>
         
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full min-w-[700px] text-left text-sm">
@@ -1238,10 +1261,10 @@ function SuplenciasView({ historial, setHistorial, setDirty }: any) {
               <tr><th className="p-3">Fecha</th><th>Acción</th><th>Suplente</th><th>Titular reemplazado</th><th>Curso</th><th>Materia</th><th/></tr>
             </thead>
             <tbody>
-              {historial.length === 0 ? (
-                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No hay altas o bajas registradas aún.</td></tr>
+              {filtrados.length === 0 ? (
+                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No se encontraron registros con esa búsqueda.</td></tr>
               ) : (
-                historial.map((h: any) => (
+                filtrados.map((h: any) => (
                   <tr key={h.id} className="border-t border-slate-100 hover:bg-[#f4faed] transition">
                     <td className="p-3 font-bold">{h.fecha}</td>
                     <td>
