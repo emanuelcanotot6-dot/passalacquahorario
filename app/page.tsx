@@ -170,29 +170,44 @@ export default function Page() {
       
       const read = (row: any, ...keys: string[]) => { const found = keys.find((key) => row?.[key] !== undefined && row?.[key] !== ''); return found ? row[found] : '' }
       
-      // Filtro para separar la fecha real de la hora que Google añade por defecto
       const parseDate = (val: any) => {
         const str = String(val || '');
         if (!str || str === 'undefined') return new Date().toISOString().split('T')[0];
         return str.split('T')[0];
       }
       
+      // Sanitizadores para corregir errores de tipeo del Excel automáticamente
+      const normalizeString = (s: any) => String(s || '').trim()
+      const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
+      
       if (Array.isArray(rows) && rows.length) {
         const normalized = rows.map((row: any, index: number) => {
-          const doc = String(read(row, 'docente', 'Docente') || '').trim()
-          let sit = String(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista') || '').trim()
+          const doc = normalizeString(read(row, 'docente', 'Docente'))
+          let sit = normalizeString(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista'))
           if (!sit) sit = doc.toUpperCase().includes('TI 2026') ? 'Titular Interino' : 'Titular'
+          
+          let diaRaw = capitalize(normalizeString(read(row, 'dia', 'Día', 'Dia')))
+          if (diaRaw === 'Miercoles') diaRaw = 'Miércoles'
+          if (diaRaw === 'Sabado') diaRaw = 'Sábado'
+          
+          let tipoRaw = capitalize(normalizeString(read(row, 'tipo', 'Tipo')))
+          if (tipoRaw === 'Teoria') tipoRaw = 'Teoría'
+          
+          let turnoRaw = capitalize(normalizeString(read(row, 'turno', 'Turno')))
+          if (turnoRaw === 'Teoria') turnoRaw = 'Teoría'
+
           return { 
-            id: String(read(row, 'id', 'ID') || index + 1), 
-            curso: String(read(row, 'curso', 'Curso') || (index === 0 ? '1°1°' : '')), 
-            turno: (read(row, 'turno', 'Turno') || 'Teoría') as 'Teoría' | 'Taller', 
-            tipo: (read(row, 'tipo', 'Tipo') || 'Teoría') as 'Teoría' | 'Taller' | 'Recreo', 
-            dia: String(read(row, 'dia', 'Día', 'Dia') || ''), 
-            horario: String(read(row, 'horario', 'Horario') || ''), 
-            materia: String(read(row, 'materia', 'Materia') || ''), 
-            docente: doc, situacionRevista: sit as Status, 
-            suplente: String(read(row, 'suplente', 'Suplente') || '').trim(), 
-            grupo: String(read(row, 'grupo', 'Grupo') || '') 
+            id: normalizeString(read(row, 'id', 'ID')) || String(index + 1), 
+            curso: normalizeString(read(row, 'curso', 'Curso')) || (index === 0 ? '1°1°' : ''), 
+            turno: turnoRaw as 'Teoría' | 'Taller', 
+            tipo: tipoRaw as 'Teoría' | 'Taller' | 'Recreo', 
+            dia: diaRaw, 
+            horario: normalizeString(read(row, 'horario', 'Horario')), 
+            materia: normalizeString(read(row, 'materia', 'Materia')), 
+            docente: doc, 
+            situacionRevista: sit as Status, 
+            suplente: normalizeString(read(row, 'suplente', 'Suplente')), 
+            grupo: normalizeString(read(row, 'grupo', 'Grupo')) 
           }
         })
 
@@ -209,10 +224,10 @@ export default function Page() {
       if (payload.ausencias && Array.isArray(payload.ausencias)) {
         const normAus = payload.ausencias.map((a: any, index: number) => ({
           id: String(read(a, 'id', 'ID') || `AUS-${index + 1}`),
-          curso: String(read(a, 'curso', 'Curso') || '1°1°'),
-          mes: String(read(a, 'mes', 'Mes') || 'Octubre'),
+          curso: String(read(a, 'curso', 'Curso') || '1°1°').trim(),
+          mes: String(read(a, 'mes', 'Mes') || 'Octubre').trim(),
           fecha: parseDate(read(a, 'fecha', 'Fecha', 'Fecha / Horario')),
-          materia: String(read(a, 'materia', 'Materia') || ''),
+          materia: String(read(a, 'materia', 'Materia') || '').trim(),
           docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || '').trim(),
           estadoCobertura: (read(a, 'estadoCobertura', 'Estado Cobertura') || 'Sin cubrir') as CoberturaStatus,
           docenteDecreto: String(read(a, 'docenteDecreto', 'Docente Decreto', 'PF Cubre por Decreto / Observación') || 'Sin cubrir').trim()
@@ -222,7 +237,7 @@ export default function Page() {
 
       if (payload.preceptores && Array.isArray(payload.preceptores)) {
         const normPrec = payload.preceptores.map((p: any) => ({
-          curso: String(read(p, 'curso', 'Curso') || ''),
+          curso: String(read(p, 'curso', 'Curso') || '').trim(),
           preceptorTitular: String(read(p, 'preceptorTitular', 'Preceptor Titular') || '').trim(),
           preceptorSuplente: String(read(p, 'preceptorSuplente', 'Preceptor Suplente') || '').trim()
         }))
@@ -235,14 +250,14 @@ export default function Page() {
         const normParo = payload.paroHistorial.map((p: any, index: number) => ({
           id: String(read(p, 'id', 'ID') || `PARO-${index + 1}`),
           fecha: parseDate(read(p, 'fecha', 'Fecha')),
-          curso: String(read(p, 'curso', 'Curso') || ''),
-          horario: String(read(p, 'horario', 'Horario') || ''),
-          materia: String(read(p, 'materia', 'Materia') || ''),
+          curso: String(read(p, 'curso', 'Curso') || '').trim(),
+          horario: String(read(p, 'horario', 'Horario') || '').trim(),
+          materia: String(read(p, 'materia', 'Materia') || '').trim(),
           docente: String(read(p, 'docente', 'Docente') || '').trim(),
           estadoParo: (read(p, 'estadoParo', 'Estado Paro') || 'normal') as Attendance,
-          observaciones: String(read(p, 'observaciones', 'Observaciones') || ''),
+          observaciones: String(read(p, 'observaciones', 'Observaciones') || '').trim(),
           tipoPersonal: (read(p, 'tipoPersonal', 'Tipo Personal') || 'docente') as 'docente' | 'preceptor',
-          grupo: String(read(p, 'grupo', 'Grupo') || '')
+          grupo: String(read(p, 'grupo', 'Grupo') || '').trim()
         }))
         setParoHistorial(normParo)
       }
@@ -251,10 +266,10 @@ export default function Page() {
         const normSup = payload.historialSuplencias.map((s: any, index: number) => ({
           id: String(read(s, 'id', 'ID') || `HS-${index + 1}`),
           fecha: parseDate(read(s, 'fecha', 'Fecha')),
-          curso: String(read(s, 'curso', 'Curso') || ''),
-          materia: String(read(s, 'materia', 'Materia') || ''),
-          titular: String(read(s, 'titular', 'Titular') || ''),
-          suplente: String(read(s, 'suplente', 'Suplente') || ''),
+          curso: String(read(s, 'curso', 'Curso') || '').trim(),
+          materia: String(read(s, 'materia', 'Materia') || '').trim(),
+          titular: String(read(s, 'titular', 'Titular') || '').trim(),
+          suplente: String(read(s, 'suplente', 'Suplente') || '').trim(),
           accion: (read(s, 'accion', 'Acción', 'Accion') || 'Alta') as 'Alta' | 'Baja'
         }))
         setHistorialSuplencias(normSup)
