@@ -100,13 +100,8 @@ export default function Page() {
 
   useEffect(() => { syncSpreadsheet() }, [])
 
-  const courseTimes = useMemo(() => {
-    const courseBlocks = blocks.filter((b: Block) => b.curso === course)
-    const timesSet = new Set(courseBlocks.map((b: Block) => b.horario))
-    return Array.from(timesSet).sort((a: string, b: string) => a.localeCompare(b))
-  }, [blocks, course])
-
   const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
+  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
   
   const teachers = useMemo(() => {
     const allTeachers = [
@@ -116,11 +111,9 @@ export default function Page() {
     return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
   }, [blocks, ausencias])
 
-  const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
-  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
-
   function updateBlock(next: Block) { 
     const old = blocks.find(b => b.id === next.id);
+    
     if (old) {
       const oldSup = (old.suplente || '').trim().toUpperCase();
       const newSup = (next.suplente || '').trim().toUpperCase();
@@ -759,7 +752,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
 
   const ausenciasFiltradas = ausencias.filter((a: AusenciaRecord) => {
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
-    const matchDocente = !docenteFiltro || a.docenteAusente.toLowerCase().includes(docenteFiltro.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(docenteFiltro.toLowerCase())
+    const matchDocente = !docenteFiltro || (a.docenteAusente || '').toLowerCase().includes(docenteFiltro.toLowerCase()) || (a.docenteDecreto || '').toLowerCase().includes(docenteFiltro.toLowerCase())
     let matchFecha = true
     if (modoFecha === 'rango' && a.fecha && a.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
       matchFecha = a.fecha >= fechaDesde && a.fecha <= fechaHasta
@@ -1205,7 +1198,7 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
                     <td>
                       <div className="flex gap-1 print:hidden">
                         <button type="button" onClick={() => cambiarEstadoDocente(b, 'normal')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'normal' ? 'bg-green-100 text-green-700 ring-2 ring-green-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Normal</button>
-                        <button type="button" onClick={() => cambiarEstadoDocente(b, 'paro')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'paro' ? 'bg-red-100 text-red-700 ring-2 ring-red-50 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Hizo Paro</button>
+                        <button type="button" onClick={() => cambiarEstadoDocente(b, 'paro')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'paro' ? 'bg-red-100 text-red-700 ring-2 ring-red-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Hizo Paro</button>
                         <button type="button" onClick={() => cambiarEstadoDocente(b, 'licencia')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'licencia' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Licencia</button>
                         <button type="button" onClick={() => cambiarEstadoDocente(b, 'no_contesta')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'no_contesta' ? 'bg-slate-700 text-white ring-2 ring-slate-900 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>No Contesta</button>
                       </div>
@@ -1221,6 +1214,75 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
       </div>
     </div>
   </div> 
+}
+
+function SuplenciasView({ historial, setHistorial, setDirty }: any) {
+  const [query, setQuery] = useState('')
+
+  const filtrados = (historial || []).filter((h: any) => 
+    !query || 
+    (h.suplente || '').toLowerCase().includes(query.toLowerCase()) ||
+    (h.titular || '').toLowerCase().includes(query.toLowerCase()) ||
+    (h.curso || '').toLowerCase().includes(query.toLowerCase()) ||
+    (h.materia || '').toLowerCase().includes(query.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="font-black text-lg text-[#0b5c46]">Registro de Altas y Bajas de Suplentes</h3>
+            <p className="text-sm text-slate-500 mt-1">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
+          </div>
+          <div className="relative w-full sm:w-72 shrink-0">
+            <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
+            <input 
+              value={query} 
+              onChange={(e) => setQuery(e.target.value)} 
+              placeholder="Buscar docente o curso..." 
+              className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" 
+            />
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
+              <tr><th className="p-3">Fecha</th><th>Acción</th><th>Suplente</th><th>Titular reemplazado</th><th>Curso</th><th>Materia</th><th/></tr>
+            </thead>
+            <tbody>
+              {filtrados.length === 0 ? (
+                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No se encontraron registros con esa búsqueda.</td></tr>
+              ) : (
+                filtrados.map((h: any) => (
+                  <tr key={h.id} className="border-t border-slate-100 hover:bg-[#f4faed] transition">
+                    <td className="p-3 font-bold">{h.fecha}</td>
+                    <td>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase shadow-sm border ${h.accion === 'Alta' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                        {h.accion}
+                      </span>
+                    </td>
+                    <td className="font-black text-slate-800 uppercase">{h.suplente}</td>
+                    <td className="font-semibold text-slate-600 uppercase">{h.titular}</td>
+                    <td className="font-bold text-[#0b5c46]">{h.curso}</td>
+                    <td className="uppercase text-xs font-bold text-slate-700">{h.materia}</td>
+                    <td>
+                       <Button variant="ghost" size="sm" onClick={() => { setHistorial(historial.filter((x: any) => x.id !== h.id)); setDirty((n: number) => n + 1) }} className="text-red-600 hover:text-red-700 h-8 px-2"><Trash2 className="size-4" /></Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) { 
+  return <div className="rounded-2xl border border-[#d7e8c9] bg-white/90 backdrop-blur-sm p-4 shadow-sm"><div className="mb-3 flex items-center justify-between text-[#0b5c46]">{icon}<span className="text-2xl font-black text-slate-900">{value}</span></div><p className="text-xs font-bold text-slate-500 uppercase">{label}</p></div> 
 }
 
 function Editor({ block, courses, onClose, onSave, onDelete }: { block: Block; courses: string[]; onClose: () => void; onSave: (b: Block) => void; onDelete: () => void }) { 
