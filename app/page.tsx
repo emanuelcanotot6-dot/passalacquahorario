@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwXo2pQSxlSKfEQbgir8mYmsLFTAJmjTUg5BcP6fWpeyd3C0S-UbrJ1WvFu_awSsHNP/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbz1LCenXovvxTnjkkYZeDsIbQe4uPmYtEEG5-K4lOfPhXZmO9ETm6IIKv70LdvrLhmm/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -100,8 +100,13 @@ export default function Page() {
 
   useEffect(() => { syncSpreadsheet() }, [])
 
+  const courseTimes = useMemo(() => {
+    const courseBlocks = blocks.filter((b: Block) => b.curso === course)
+    const timesSet = new Set(courseBlocks.map((b: Block) => b.horario))
+    return Array.from(timesSet).sort((a: string, b: string) => a.localeCompare(b))
+  }, [blocks, course])
+
   const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
-  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
   
   const teachers = useMemo(() => {
     const allTeachers = [
@@ -111,29 +116,38 @@ export default function Page() {
     return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
   }, [blocks, ausencias])
 
+  const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
+  const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
+
   function updateBlock(next: Block) { 
-    const old = blocks.find(b => b.id === next.id);
-    
-    if (old) {
-      const oldSup = (old.suplente || '').trim().toUpperCase();
-      const newSup = (next.suplente || '').trim().toUpperCase();
-      const today = new Date().toISOString().split('T')[0];
+    setBlocks((current) => {
+      const old = current.find(b => b.id === next.id);
+      
+      // Si el bloque existe, verificamos si cambió el suplente
+      if (old) {
+        const oldSup = (old.suplente || '').trim().toUpperCase();
+        const newSup = (next.suplente || '').trim().toUpperCase();
+        const today = new Date().toISOString().split('T')[0];
 
-      if (oldSup !== newSup) {
-        const newRecords: SuplenciaRecord[] = [];
-        if (oldSup) {
-          newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
+        if (oldSup !== newSup) {
+          const newRecords: SuplenciaRecord[] = [];
+          if (oldSup) {
+            newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
+          }
+          if (newSup) {
+            newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+          }
+          if (newRecords.length > 0) {
+            setHistorialSuplencias(prev => [...newRecords, ...prev]);
+          }
         }
-        if (newSup) {
-          newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
-        }
-        if (newRecords.length > 0) {
-          setHistorialSuplencias(prev => [...newRecords, ...prev]);
-        }
+        return current.map((b: Block) => b.id === next.id ? next : b);
+      } else {
+        // Es un bloque nuevo (Agregado desde el botón + Agregar)
+        return [...current, next];
       }
-    }
+    });
 
-    setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b));
     setEditing(null);
     setDirty((n) => n + 1); 
   }
@@ -180,7 +194,16 @@ export default function Page() {
             grupo: String(read(row, 'grupo', 'Grupo') || '') 
           }
         })
-        setBlocks(normalized)
+
+        // AUTO-LIMPIEZA DE DUPLICADOS: Si detecta múltiples bloques idénticos (mismo curso, dia, horario, materia y grupo) guarda solo 1
+        const uniqueBlocksMap = new Map();
+        normalized.forEach(b => {
+          const key = `${b.curso}|${b.dia}|${b.horario}|${b.materia}|${b.grupo}`;
+          if (!uniqueBlocksMap.has(key)) {
+            uniqueBlocksMap.set(key, b);
+          }
+        });
+        setBlocks(Array.from(uniqueBlocksMap.values()))
       }
 
       if (payload.ausencias && Array.isArray(payload.ausencias)) {
@@ -251,7 +274,7 @@ export default function Page() {
     try { 
       await fetch(spreadsheetApi, { 
         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ action: 'replace', rows: blocks.map(({ id, ...row }) => row), ausencias, preceptores, paroHistorial, historialSuplencias }) 
+        body: JSON.stringify({ action: 'replace', rows: blocks, ausencias, preceptores, paroHistorial, historialSuplencias }) 
       }) 
       setSaved(true); setDirty(0); setSyncMessage('Guardado en Google Drive') 
       setTimeout(() => setSaved(false), 2600) 
@@ -298,7 +321,7 @@ export default function Page() {
                 <p className="mt-1 text-xs sm:text-sm text-slate-600">Actualización activa · {syncMessage}</p>
               </div>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save}>
+                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save} disabled={syncing || saved}>
                   {saved ? <Check data-icon="inline-start" /> : <Cloud data-icon="inline-start" />}
                   {saved ? 'Guardado' : dirty ? `Guardar (${dirty})` : 'Guardar cambios'}
                 </Button>
