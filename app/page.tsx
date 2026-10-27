@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbz1LCenXovvxTnjkkYZeDsIbQe4uPmYtEEG5-K4lOfPhXZmO9ETm6IIKv70LdvrLhmm/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -120,34 +120,28 @@ export default function Page() {
   const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
-    setBlocks((current) => {
-      const old = current.find(b => b.id === next.id);
-      
-      // Si el bloque existe, verificamos si cambió el suplente
-      if (old) {
-        const oldSup = (old.suplente || '').trim().toUpperCase();
-        const newSup = (next.suplente || '').trim().toUpperCase();
-        const today = new Date().toISOString().split('T')[0];
+    const old = blocks.find(b => b.id === next.id);
+    
+    if (old) {
+      const oldSup = (old.suplente || '').trim().toUpperCase();
+      const newSup = (next.suplente || '').trim().toUpperCase();
+      const today = new Date().toISOString().split('T')[0];
 
-        if (oldSup !== newSup) {
-          const newRecords: SuplenciaRecord[] = [];
-          if (oldSup) {
-            newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
-          }
-          if (newSup) {
-            newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
-          }
-          if (newRecords.length > 0) {
-            setHistorialSuplencias(prev => [...newRecords, ...prev]);
-          }
+      if (oldSup !== newSup) {
+        const newRecords: SuplenciaRecord[] = [];
+        if (oldSup) {
+          newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
         }
-        return current.map((b: Block) => b.id === next.id ? next : b);
-      } else {
-        // Es un bloque nuevo (Agregado desde el botón + Agregar)
-        return [...current, next];
+        if (newSup) {
+          newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+        }
+        if (newRecords.length > 0) {
+          setHistorialSuplencias(prev => [...newRecords, ...prev]);
+        }
       }
-    });
+    }
 
+    setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b));
     setEditing(null);
     setDirty((n) => n + 1); 
   }
@@ -176,6 +170,13 @@ export default function Page() {
       
       const read = (row: any, ...keys: string[]) => { const found = keys.find((key) => row?.[key] !== undefined && row?.[key] !== ''); return found ? row[found] : '' }
       
+      // Filtro para separar la fecha real de la hora que Google añade por defecto
+      const parseDate = (val: any) => {
+        const str = String(val || '');
+        if (!str || str === 'undefined') return new Date().toISOString().split('T')[0];
+        return str.split('T')[0];
+      }
+      
       if (Array.isArray(rows) && rows.length) {
         const normalized = rows.map((row: any, index: number) => {
           const doc = String(read(row, 'docente', 'Docente') || '').trim()
@@ -195,7 +196,6 @@ export default function Page() {
           }
         })
 
-        // AUTO-LIMPIEZA DE DUPLICADOS: Si detecta múltiples bloques idénticos (mismo curso, dia, horario, materia y grupo) guarda solo 1
         const uniqueBlocksMap = new Map();
         normalized.forEach(b => {
           const key = `${b.curso}|${b.dia}|${b.horario}|${b.materia}|${b.grupo}`;
@@ -211,7 +211,7 @@ export default function Page() {
           id: String(read(a, 'id', 'ID') || `AUS-${index + 1}`),
           curso: String(read(a, 'curso', 'Curso') || '1°1°'),
           mes: String(read(a, 'mes', 'Mes') || 'Octubre'),
-          fecha: String(read(a, 'fecha', 'Fecha', 'Fecha / Horario') || new Date().toISOString().split('T')[0]),
+          fecha: parseDate(read(a, 'fecha', 'Fecha', 'Fecha / Horario')),
           materia: String(read(a, 'materia', 'Materia') || ''),
           docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || '').trim(),
           estadoCobertura: (read(a, 'estadoCobertura', 'Estado Cobertura') || 'Sin cubrir') as CoberturaStatus,
@@ -234,7 +234,7 @@ export default function Page() {
       if (payload.paroHistorial && Array.isArray(payload.paroHistorial)) {
         const normParo = payload.paroHistorial.map((p: any, index: number) => ({
           id: String(read(p, 'id', 'ID') || `PARO-${index + 1}`),
-          fecha: String(read(p, 'fecha', 'Fecha') || new Date().toISOString().split('T')[0]),
+          fecha: parseDate(read(p, 'fecha', 'Fecha')),
           curso: String(read(p, 'curso', 'Curso') || ''),
           horario: String(read(p, 'horario', 'Horario') || ''),
           materia: String(read(p, 'materia', 'Materia') || ''),
@@ -250,7 +250,7 @@ export default function Page() {
       if (payload.historialSuplencias && Array.isArray(payload.historialSuplencias)) {
         const normSup = payload.historialSuplencias.map((s: any, index: number) => ({
           id: String(read(s, 'id', 'ID') || `HS-${index + 1}`),
-          fecha: String(read(s, 'fecha', 'Fecha') || ''),
+          fecha: parseDate(read(s, 'fecha', 'Fecha')),
           curso: String(read(s, 'curso', 'Curso') || ''),
           materia: String(read(s, 'materia', 'Materia') || ''),
           titular: String(read(s, 'titular', 'Titular') || ''),
