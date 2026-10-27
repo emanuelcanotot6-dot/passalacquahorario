@@ -165,7 +165,11 @@ export default function Page() {
       const payload = await response.json()
       const rows = Array.isArray(payload) ? payload : payload.data ?? payload.rows ?? payload.blocks ?? payload.values
       
-      const read = (row: any, ...keys: string[]) => { const found = keys.find((key) => row?.[key] !== undefined && row?.[key] !== ''); return found ? row[found] : '' }
+      const read = (row: any, ...keys: string[]) => { 
+        const lowerRow = Object.fromEntries(Object.entries(row || {}).map(([k, v]) => [k.toLowerCase(), v]));
+        const found = keys.find((key) => lowerRow[key.toLowerCase()] !== undefined && lowerRow[key.toLowerCase()] !== ''); 
+        return found ? lowerRow[found.toLowerCase()] : '' 
+      }
       
       const parseDate = (val: any) => {
         const str = String(val || '');
