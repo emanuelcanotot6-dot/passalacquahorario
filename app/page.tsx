@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbzzoAb2u-IXEVR0nX3BfU-5axB7ZnafLzubY5NvGd6BbUffq2XY4jAZDNpy0eWSjpc9/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwyf9BTExUafmbbbFf1fEDUJ-X2KKPAkAsHmBIWrXWxoRcd2uzT_Zg4odn5xegJ4Bg9/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -100,12 +100,6 @@ export default function Page() {
 
   useEffect(() => { syncSpreadsheet() }, [])
 
-  const courseTimes = useMemo(() => {
-    const courseBlocks = blocks.filter((b: Block) => b.curso === course)
-    const timesSet = new Set(courseBlocks.map((b: Block) => b.horario))
-    return Array.from(timesSet).sort((a: string, b: string) => a.localeCompare(b))
-  }, [blocks, course])
-
   const visible = blocks.filter((b: Block) => b.curso === course && selectedDays.includes(b.dia) && (filter === 'Todos' || b.tipo === filter || b.tipo === 'Recreo'))
   
   const teachers = useMemo(() => {
@@ -116,12 +110,12 @@ export default function Page() {
     return [...new Set(allTeachers)].sort((a, b) => a.localeCompare(b));
   }, [blocks, ausencias])
 
-  const searchResults = blocks.filter((b: Block) => (b.docente + ' ' + (b.suplente ?? '')).toLowerCase().includes(query.toLowerCase()))
   const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
     setBlocks((current) => {
       const old = current.find(b => b.id === next.id);
+      
       if (old) {
         const oldSup = (old.suplente || '').trim().toUpperCase();
         const newSup = (next.suplente || '').trim().toUpperCase();
@@ -137,12 +131,14 @@ export default function Page() {
           }
           if (newRecords.length > 0) {
             setHistorialSuplencias(prev => [...newRecords, ...prev]);
-            setDirty(n => n + 1);
           }
         }
+        return current.map((b: Block) => b.id === next.id ? next : b);
+      } else {
+        return [...current, next];
       }
-      return current.map((b: Block) => b.id === next.id ? next : b);
     });
+
     setEditing(null);
     setDirty((n) => n + 1); 
   }
@@ -171,22 +167,30 @@ export default function Page() {
       
       const read = (row: any, ...keys: string[]) => { const found = keys.find((key) => row?.[key] !== undefined && row?.[key] !== ''); return found ? row[found] : '' }
       
+      const parseDate = (val: any) => {
+        const str = String(val || '');
+        if (!str || str === 'undefined') return new Date().toISOString().split('T')[0];
+        return str.split('T')[0];
+      }
+      
       if (Array.isArray(rows) && rows.length) {
         const normalized = rows.map((row: any, index: number) => {
           const doc = String(read(row, 'docente', 'Docente') || '').trim()
           let sit = String(read(row, 'situacionRevista', 'Situación Revista', 'Situacion Revista') || '').trim()
           if (!sit) sit = doc.toUpperCase().includes('TI 2026') ? 'Titular Interino' : 'Titular'
+          
           return { 
             id: String(read(row, 'id', 'ID') || index + 1), 
-            curso: String(read(row, 'curso', 'Curso') || (index === 0 ? '1°1°' : '')), 
+            curso: String(read(row, 'curso', 'Curso') || (index === 0 ? '1°1°' : '')).trim(), 
             turno: (read(row, 'turno', 'Turno') || 'Teoría') as 'Teoría' | 'Taller', 
             tipo: (read(row, 'tipo', 'Tipo') || 'Teoría') as 'Teoría' | 'Taller' | 'Recreo', 
-            dia: String(read(row, 'dia', 'Día', 'Dia') || ''), 
-            horario: String(read(row, 'horario', 'Horario') || ''), 
+            dia: String(read(row, 'dia', 'Día', 'Dia') || '').trim(), 
+            horario: String(read(row, 'horario', 'Horario') || '').trim(), 
             materia: String(read(row, 'materia', 'Materia') || ''), 
-            docente: doc, situacionRevista: sit as Status, 
+            docente: doc, 
+            situacionRevista: sit as Status, 
             suplente: String(read(row, 'suplente', 'Suplente') || '').trim(), 
-            grupo: String(read(row, 'grupo', 'Grupo') || '') 
+            grupo: String(read(row, 'grupo', 'Grupo') || '').trim() 
           }
         })
         setBlocks(normalized)
@@ -195,10 +199,10 @@ export default function Page() {
       if (payload.ausencias && Array.isArray(payload.ausencias)) {
         const normAus = payload.ausencias.map((a: any, index: number) => ({
           id: String(read(a, 'id', 'ID') || `AUS-${index + 1}`),
-          curso: String(read(a, 'curso', 'Curso') || '1°1°'),
-          mes: String(read(a, 'mes', 'Mes') || 'Octubre'),
-          fecha: String(read(a, 'fecha', 'Fecha', 'Fecha / Horario') || new Date().toISOString().split('T')[0]),
-          materia: String(read(a, 'materia', 'Materia') || ''),
+          curso: String(read(a, 'curso', 'Curso') || '1°1°').trim(),
+          mes: String(read(a, 'mes', 'Mes') || 'Octubre').trim(),
+          fecha: parseDate(read(a, 'fecha', 'Fecha', 'Fecha / Horario')),
+          materia: String(read(a, 'materia', 'Materia') || '').trim(),
           docenteAusente: String(read(a, 'docenteAusente', 'Docente Ausente', 'docente') || '').trim(),
           estadoCobertura: (read(a, 'estadoCobertura', 'Estado Cobertura') || 'Sin cubrir') as CoberturaStatus,
           docenteDecreto: String(read(a, 'docenteDecreto', 'Docente Decreto', 'PF Cubre por Decreto / Observación') || 'Sin cubrir').trim()
@@ -208,7 +212,7 @@ export default function Page() {
 
       if (payload.preceptores && Array.isArray(payload.preceptores)) {
         const normPrec = payload.preceptores.map((p: any) => ({
-          curso: String(read(p, 'curso', 'Curso') || ''),
+          curso: String(read(p, 'curso', 'Curso') || '').trim(),
           preceptorTitular: String(read(p, 'preceptorTitular', 'Preceptor Titular') || '').trim(),
           preceptorSuplente: String(read(p, 'preceptorSuplente', 'Preceptor Suplente') || '').trim()
         }))
@@ -220,15 +224,15 @@ export default function Page() {
       if (payload.paroHistorial && Array.isArray(payload.paroHistorial)) {
         const normParo = payload.paroHistorial.map((p: any, index: number) => ({
           id: String(read(p, 'id', 'ID') || `PARO-${index + 1}`),
-          fecha: String(read(p, 'fecha', 'Fecha') || new Date().toISOString().split('T')[0]),
-          curso: String(read(p, 'curso', 'Curso') || ''),
-          horario: String(read(p, 'horario', 'Horario') || ''),
-          materia: String(read(p, 'materia', 'Materia') || ''),
+          fecha: parseDate(read(p, 'fecha', 'Fecha')),
+          curso: String(read(p, 'curso', 'Curso') || '').trim(),
+          horario: String(read(p, 'horario', 'Horario') || '').trim(),
+          materia: String(read(p, 'materia', 'Materia') || '').trim(),
           docente: String(read(p, 'docente', 'Docente') || '').trim(),
           estadoParo: (read(p, 'estadoParo', 'Estado Paro') || 'normal') as Attendance,
-          observaciones: String(read(p, 'observaciones', 'Observaciones') || ''),
+          observaciones: String(read(p, 'observaciones', 'Observaciones') || '').trim(),
           tipoPersonal: (read(p, 'tipoPersonal', 'Tipo Personal') || 'docente') as 'docente' | 'preceptor',
-          grupo: String(read(p, 'grupo', 'Grupo') || '')
+          grupo: String(read(p, 'grupo', 'Grupo') || '').trim()
         }))
         setParoHistorial(normParo)
       }
@@ -236,11 +240,11 @@ export default function Page() {
       if (payload.historialSuplencias && Array.isArray(payload.historialSuplencias)) {
         const normSup = payload.historialSuplencias.map((s: any, index: number) => ({
           id: String(read(s, 'id', 'ID') || `HS-${index + 1}`),
-          fecha: String(read(s, 'fecha', 'Fecha') || ''),
-          curso: String(read(s, 'curso', 'Curso') || ''),
-          materia: String(read(s, 'materia', 'Materia') || ''),
-          titular: String(read(s, 'titular', 'Titular') || ''),
-          suplente: String(read(s, 'suplente', 'Suplente') || ''),
+          fecha: parseDate(read(s, 'fecha', 'Fecha')),
+          curso: String(read(s, 'curso', 'Curso') || '').trim(),
+          materia: String(read(s, 'materia', 'Materia') || '').trim(),
+          titular: String(read(s, 'titular', 'Titular') || '').trim(),
+          suplente: String(read(s, 'suplente', 'Suplente') || '').trim(),
           accion: (read(s, 'accion', 'Acción', 'Accion') || 'Alta') as 'Alta' | 'Baja'
         }))
         setHistorialSuplencias(normSup)
@@ -260,7 +264,7 @@ export default function Page() {
     try { 
       await fetch(spreadsheetApi, { 
         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ action: 'replace', rows: blocks.map(({ id, ...row }) => row), ausencias, preceptores, paroHistorial, historialSuplencias }) 
+        body: JSON.stringify({ action: 'replace', rows: blocks, ausencias, preceptores, paroHistorial, historialSuplencias }) 
       }) 
       setSaved(true); setDirty(0); setSyncMessage('Guardado en Google Drive') 
       setTimeout(() => setSaved(false), 2600) 
@@ -307,7 +311,7 @@ export default function Page() {
                 <p className="mt-1 text-xs sm:text-sm text-slate-600">Actualización activa · {syncMessage}</p>
               </div>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save}>
+                <Button className="bg-[#0b5c46] text-white hover:bg-[#074030] flex-1 sm:flex-none shadow-md" onClick={save} disabled={syncing || saved}>
                   {saved ? <Check data-icon="inline-start" /> : <Cloud data-icon="inline-start" />}
                   {saved ? 'Guardado' : dirty ? `Guardar (${dirty})` : 'Guardar cambios'}
                 </Button>
@@ -761,7 +765,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
 
   const ausenciasFiltradas = ausencias.filter((a: AusenciaRecord) => {
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
-    const matchDocente = !docenteFiltro || a.docenteAusente.toLowerCase().includes(docenteFiltro.toLowerCase()) || a.docenteDecreto.toLowerCase().includes(docenteFiltro.toLowerCase())
+    const matchDocente = !docenteFiltro || (a.docenteAusente || '').toLowerCase().includes(docenteFiltro.toLowerCase()) || (a.docenteDecreto || '').toLowerCase().includes(docenteFiltro.toLowerCase())
     let matchFecha = true
     if (modoFecha === 'rango' && a.fecha && a.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
       matchFecha = a.fecha >= fechaDesde && a.fecha <= fechaHasta
@@ -1226,11 +1230,34 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
 }
 
 function SuplenciasView({ historial, setHistorial, setDirty }: any) {
+  const [query, setQuery] = useState('')
+
+  const filtrados = (historial || []).filter((h: any) => 
+    !query || 
+    (h.suplente || '').toLowerCase().includes(query.toLowerCase()) ||
+    (h.titular || '').toLowerCase().includes(query.toLowerCase()) ||
+    (h.curso || '').toLowerCase().includes(query.toLowerCase()) ||
+    (h.materia || '').toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl">
-        <h3 className="font-black text-lg text-[#0b5c46] mb-4">Registro de Altas y Bajas de Suplentes</h3>
-        <p className="text-sm text-slate-500 mb-6">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="font-black text-lg text-[#0b5c46]">Registro de Altas y Bajas de Suplentes</h3>
+            <p className="text-sm text-slate-500 mt-1">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
+          </div>
+          <div className="relative w-full sm:w-72 shrink-0">
+            <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
+            <input 
+              value={query} 
+              onChange={(e) => setQuery(e.target.value)} 
+              placeholder="Buscar docente o curso..." 
+              className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]" 
+            />
+          </div>
+        </div>
         
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full min-w-[700px] text-left text-sm">
@@ -1238,10 +1265,10 @@ function SuplenciasView({ historial, setHistorial, setDirty }: any) {
               <tr><th className="p-3">Fecha</th><th>Acción</th><th>Suplente</th><th>Titular reemplazado</th><th>Curso</th><th>Materia</th><th/></tr>
             </thead>
             <tbody>
-              {historial.length === 0 ? (
-                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No hay altas o bajas registradas aún.</td></tr>
+              {filtrados.length === 0 ? (
+                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No se encontraron registros con esa búsqueda.</td></tr>
               ) : (
-                historial.map((h: any) => (
+                filtrados.map((h: any) => (
                   <tr key={h.id} className="border-t border-slate-100 hover:bg-[#f4faed] transition">
                     <td className="p-3 font-bold">{h.fecha}</td>
                     <td>
