@@ -6,9 +6,9 @@ import { toPng } from 'html-to-image'
 import { Button } from '@/components/ui/button'
 import { CalendarDays, Check, ChevronDown, Cloud, Download, ListFilter, Pencil, Printer, Search, ShieldAlert, ShieldCheck, UserCheck, UserX, Users, X, Zap, Clock, Trash2, Plus, Image as ImageIcon, FileSpreadsheet, Coffee, ArrowDownUp } from 'lucide-react'
 
-type View = 'horario' | 'docentes' | 'ausencias' | 'preceptores' | 'paro'
+type View = 'horario' | 'docentes' | 'ausencias' | 'preceptores' | 'paro' | 'suplencias'
 type Status = 'Titular' | 'Provisional' | 'Titular Interino'
-type Attendance = 'normal' | 'paro' | 'licencia'
+type Attendance = 'normal' | 'paro' | 'licencia' | 'no_contesta'
 type CoberturaStatus = 'Cubierto por Decreto' | 'Sin cubrir'
 
 type Block = { 
@@ -55,13 +55,24 @@ type ParoRecord = {
   grupo?: string;
 }
 
+type SuplenciaRecord = {
+  id: string;
+  fecha: string;
+  curso: string;
+  materia: string;
+  titular: string;
+  suplente: string;
+  accion: 'Alta' | 'Baja';
+}
+
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbzzoAb2u-IXEVR0nX3BfU-5axB7ZnafLzubY5NvGd6BbUffq2XY4jAZDNpy0eWSjpc9/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
 const seed: Block[] = []
 const seedAusencias: AusenciaRecord[] = []
+const seedSuplencias: SuplenciaRecord[] = []
 const seedPreceptores: PreceptorAssignment[] = courses.map((c) => ({
   curso: c, preceptorTitular: '', preceptorSuplente: ''
 }))
@@ -72,6 +83,7 @@ export default function Page() {
   const [view, setView] = useState<View>('horario')
   const [blocks, setBlocks] = useState<Block[]>(seed)
   const [ausencias, setAusencias] = useState<AusenciaRecord[]>(seedAusencias)
+  const [historialSuplencias, setHistorialSuplencias] = useState<SuplenciaRecord[]>(seedSuplencias)
   const [preceptores, setPreceptores] = useState<PreceptorAssignment[]>(seedPreceptores)
   const [paroHistorial, setParoHistorial] = useState<ParoRecord[]>([])
   
@@ -108,9 +120,31 @@ export default function Page() {
   const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
-    setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b))
-    setEditing(null)
-    setDirty((n) => n + 1) 
+    setBlocks((current) => {
+      const old = current.find(b => b.id === next.id);
+      if (old) {
+        const oldSup = (old.suplente || '').trim().toUpperCase();
+        const newSup = (next.suplente || '').trim().toUpperCase();
+        const today = new Date().toISOString().split('T')[0];
+
+        if (oldSup !== newSup) {
+          const newRecords: SuplenciaRecord[] = [];
+          if (oldSup) {
+            newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
+          }
+          if (newSup) {
+            newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+          }
+          if (newRecords.length > 0) {
+            setHistorialSuplencias(prev => [...newRecords, ...prev]);
+            setDirty(n => n + 1);
+          }
+        }
+      }
+      return current.map((b: Block) => b.id === next.id ? next : b);
+    });
+    setEditing(null);
+    setDirty((n) => n + 1); 
   }
 
   function descargarBaseCompletaExcel() {
@@ -123,6 +157,7 @@ export default function Page() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(preceptores), 'PRECEPTORES')
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(paroHistorial), 'RELEVAMIENTO_PARO')
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ausencias), 'AUSENCIAS_HISTORICO')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(historialSuplencias), 'HISTORIAL_SUPLENCIAS')
     XLSX.writeFile(wb, 'HORARIOS-app-actualizado.xlsx')
   }
   
@@ -197,6 +232,20 @@ export default function Page() {
         }))
         setParoHistorial(normParo)
       }
+
+      if (payload.historialSuplencias && Array.isArray(payload.historialSuplencias)) {
+        const normSup = payload.historialSuplencias.map((s: any, index: number) => ({
+          id: String(read(s, 'id', 'ID') || `HS-${index + 1}`),
+          fecha: String(read(s, 'fecha', 'Fecha') || ''),
+          curso: String(read(s, 'curso', 'Curso') || ''),
+          materia: String(read(s, 'materia', 'Materia') || ''),
+          titular: String(read(s, 'titular', 'Titular') || ''),
+          suplente: String(read(s, 'suplente', 'Suplente') || ''),
+          accion: (read(s, 'accion', 'Acción', 'Accion') || 'Alta') as 'Alta' | 'Baja'
+        }))
+        setHistorialSuplencias(normSup)
+      }
+
       setSyncMessage(`Conectado exitosamente (${Array.isArray(rows) ? rows.length : courses.length} bloques sincronizados)`)
     } catch { 
       setSyncMessage('No se pudo conectar · usando respaldo local') 
@@ -211,7 +260,7 @@ export default function Page() {
     try { 
       await fetch(spreadsheetApi, { 
         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ action: 'replace', rows: blocks.map(({ id, ...row }) => row), ausencias, preceptores, paroHistorial }) 
+        body: JSON.stringify({ action: 'replace', rows: blocks.map(({ id, ...row }) => row), ausencias, preceptores, paroHistorial, historialSuplencias }) 
       }) 
       setSaved(true); setDirty(0); setSyncMessage('Guardado en Google Drive') 
       setTimeout(() => setSaved(false), 2600) 
@@ -243,6 +292,7 @@ export default function Page() {
             <Tab active={view === 'ausencias'} onClick={() => setView('ausencias')} icon={<UserX className="size-4 shrink-0" />} label="Ausencias" />
             <Tab active={view === 'preceptores'} onClick={() => setView('preceptores')} icon={<UserCheck className="size-4 shrink-0" />} label="Preceptores" />
             <Tab active={view === 'paro'} onClick={() => setView('paro')} icon={<ShieldCheck className="size-4 shrink-0" />} label="Registro de Paro" />
+            <Tab active={view === 'suplencias'} onClick={() => setView('suplencias')} icon={<ArrowDownUp className="size-4 shrink-0" />} label="Altas/Bajas" />
           </nav>
         </header>
         
@@ -252,7 +302,7 @@ export default function Page() {
               <div>
                 <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0b5c46]">Panel de control</p>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                  {view === 'horario' ? 'Horario semanal y recreos' : view === 'docentes' ? 'Buscar docentes' : view === 'ausencias' ? 'Base de datos de ausencias y cobertura' : view === 'preceptores' ? 'Asignación de preceptores por curso' : 'Historial y control diario de paro'}
+                  {view === 'horario' ? 'Horario semanal y recreos' : view === 'docentes' ? 'Buscar docentes' : view === 'ausencias' ? 'Base de datos de ausencias y cobertura' : view === 'preceptores' ? 'Asignación de preceptores por curso' : view === 'suplencias' ? 'Registro de Altas y Bajas' : 'Historial y control diario de paro'}
                 </h2>
                 <p className="mt-1 text-xs sm:text-sm text-slate-600">Actualización activa · {syncMessage}</p>
               </div>
@@ -270,13 +320,21 @@ export default function Page() {
           {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} blocks={blocks} />}
           {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
           {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
+          {view === 'suplencias' && <SuplenciasView historial={historialSuplencias} setHistorial={setHistorialSuplencias} setDirty={setDirty} />}
         </main>
         
         <footer className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-2 border-t border-white/20 px-4 sm:px-5 py-4 text-xs text-slate-600 print:hidden text-center sm:text-left bg-white/80 backdrop-blur-md mt-auto w-full">
           <span>© 2026 E.E.S.T. N° 6 · Sistema de Gestión Escolar</span>
           <span className="flex items-center gap-1.5"><Zap className="size-3 text-[#388e3c]" />Sincronización en vivo con Drive</span>
         </footer>
-        {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); setEditing(null); setDirty((n) => n + 1) }} />}
+        {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { 
+          if (editing && editing.suplente) {
+            setHistorialSuplencias(prev => [{ id: `HS-${Date.now()}-B`, fecha: new Date().toISOString().split('T')[0], curso: editing.curso, materia: editing.materia, titular: editing.docente, suplente: editing.suplente!.trim().toUpperCase(), accion: 'Baja' }, ...prev]);
+          }
+          setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); 
+          setEditing(null); 
+          setDirty((n) => n + 1) 
+        }} />}
         {showRecreosModal && <RecreosModal course={course} blocks={blocks} setBlocks={setBlocks} onClose={() => setShowRecreosModal(false)} setDirty={setDirty} />}
       </div>
     </>
@@ -1110,8 +1168,9 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
                         <button type="button" onClick={() => cambiarEstadoPreceptor(p, 'normal')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'normal' ? 'bg-green-100 text-green-700 ring-2 ring-green-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Normal</button>
                         <button type="button" onClick={() => cambiarEstadoPreceptor(p, 'paro')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'paro' ? 'bg-red-100 text-red-700 ring-2 ring-red-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Hizo Paro</button>
                         <button type="button" onClick={() => cambiarEstadoPreceptor(p, 'licencia')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'licencia' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Licencia</button>
+                        <button type="button" onClick={() => cambiarEstadoPreceptor(p, 'no_contesta')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'no_contesta' ? 'bg-slate-700 text-white ring-2 ring-slate-900 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>No Contesta</button>
                       </div>
-                      <div className="hidden print:block font-bold">{estadoActual === 'normal' ? '✅ Normal' : estadoActual === 'paro' ? '🛑 Hizo Paro' : '⚠️ Licencia'}</div>
+                      <div className="hidden print:block font-bold">{estadoActual === 'normal' ? '✅ Normal' : estadoActual === 'paro' ? '🛑 Hizo Paro' : estadoActual === 'licencia' ? '⚠️ Licencia' : '❓ No Contesta'}</div>
                     </td>
                     <td className="p-2"><input value={reg?.observaciones || ''} onChange={(e) => cambiarEstadoPreceptor(p, estadoActual, e.target.value)} placeholder="Observación preceptor..." className="w-full min-w-40 rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#0b5c46]" /></td>
                   </tr>
@@ -1150,8 +1209,9 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
                         <button type="button" onClick={() => cambiarEstadoDocente(b, 'normal')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'normal' ? 'bg-green-100 text-green-700 ring-2 ring-green-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Normal</button>
                         <button type="button" onClick={() => cambiarEstadoDocente(b, 'paro')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'paro' ? 'bg-red-100 text-red-700 ring-2 ring-red-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Hizo Paro</button>
                         <button type="button" onClick={() => cambiarEstadoDocente(b, 'licencia')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'licencia' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Licencia</button>
+                        <button type="button" onClick={() => cambiarEstadoDocente(b, 'no_contesta')} className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${estadoActual === 'no_contesta' ? 'bg-slate-700 text-white ring-2 ring-slate-900 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>No Contesta</button>
                       </div>
-                      <div className="hidden print:block font-bold">{estadoActual === 'normal' ? '✅ Normal' : estadoActual === 'paro' ? '🛑 Hizo Paro' : '⚠️ Licencia'}</div>
+                      <div className="hidden print:block font-bold">{estadoActual === 'normal' ? '✅ Normal' : estadoActual === 'paro' ? '🛑 Hizo Paro' : estadoActual === 'licencia' ? '⚠️ Licencia' : '❓ No Contesta'}</div>
                     </td>
                     <td className="p-2"><input value={reg?.observaciones || ''} onChange={(e) => cambiarEstadoDocente(b, estadoActual, e.target.value)} placeholder="Observación..." className="w-full min-w-40 rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#0b5c46]" /></td>
                   </tr>
@@ -1163,6 +1223,48 @@ function StrikeView({ dayBlocks, courses, paroHistorial, setParoHistorial, setDi
       </div>
     </div>
   </div> 
+}
+
+function SuplenciasView({ historial, setHistorial, setDirty }: any) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="rounded-2xl border border-white/40 bg-white/90 backdrop-blur-sm p-4 sm:p-6 shadow-xl">
+        <h3 className="font-black text-lg text-[#0b5c46] mb-4">Registro de Altas y Bajas de Suplentes</h3>
+        <p className="text-sm text-slate-500 mb-6">Este registro automático guarda un historial de cuándo se agregan o quitan suplentes del horario semanal.</p>
+        
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
+              <tr><th className="p-3">Fecha</th><th>Acción</th><th>Suplente</th><th>Titular reemplazado</th><th>Curso</th><th>Materia</th><th/></tr>
+            </thead>
+            <tbody>
+              {historial.length === 0 ? (
+                <tr><td colSpan={7} className="p-6 text-center text-slate-400 font-semibold">No hay altas o bajas registradas aún.</td></tr>
+              ) : (
+                historial.map((h: any) => (
+                  <tr key={h.id} className="border-t border-slate-100 hover:bg-[#f4faed] transition">
+                    <td className="p-3 font-bold">{h.fecha}</td>
+                    <td>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase shadow-sm border ${h.accion === 'Alta' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                        {h.accion}
+                      </span>
+                    </td>
+                    <td className="font-black text-slate-800 uppercase">{h.suplente}</td>
+                    <td className="font-semibold text-slate-600 uppercase">{h.titular}</td>
+                    <td className="font-bold text-[#0b5c46]">{h.curso}</td>
+                    <td className="uppercase text-xs font-bold text-slate-700">{h.materia}</td>
+                    <td>
+                       <Button variant="ghost" size="sm" onClick={() => { setHistorial(historial.filter((x: any) => x.id !== h.id)); setDirty((n: number) => n + 1) }} className="text-red-600 hover:text-red-700 h-8 px-2"><Trash2 className="size-4" /></Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) { 
