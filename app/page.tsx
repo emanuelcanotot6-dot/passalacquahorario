@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwyf9BTExUafmbbbFf1fEDUJ-X2KKPAkAsHmBIWrXWxoRcd2uzT_Zg4odn5xegJ4Bg9/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -171,10 +171,11 @@ export default function Page() {
         return found ? lowerRow[found.toLowerCase()] : '' 
       }
       
+      // Sanitizador maestro para limpiar las fechas con horas que vienen del Excel (00:00:00)
       const parseDate = (val: any) => {
         const str = String(val || '');
         if (!str || str === 'undefined') return new Date().toISOString().split('T')[0];
-        return str.split('T')[0];
+        return str.split('T')[0].split(' ')[0]; // Corta en la T o en el espacio.
       }
       
       if (Array.isArray(rows) && rows.length) {
@@ -730,6 +731,7 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
 }
 
 function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: any) {
+  // Separé el estado del Buscador (cursoFiltro) del estado del Formulario (cursoInput)
   const [cursoFiltro, setCursoFiltro] = useState('Todos')
   const [docenteFiltro, setDocenteFiltro] = useState('')
   const [modoFecha, setModoFecha] = useState<'todo' | 'rango'>('todo')
@@ -740,6 +742,8 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [calendarDate, setCalendarDate] = useState(new Date())
 
+  // Estado independiente para registrar ausencias
+  const [cursoInput, setCursoInput] = useState(courses[0] || '1°1°')
   const [fechaInput, setFechaInput] = useState(new Date().toISOString().split('T')[0])
   const [claseSeleccionada, setClaseSeleccionada] = useState<string>('manual')
   const [docenteInput, setDocenteInput] = useState('')
@@ -754,8 +758,8 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
   }, [fechaInput])
 
   const opcionesDelDia = useMemo(() => {
-    return blocks.filter((b: Block) => b.curso === (cursoFiltro === 'Todos' ? courses[0] : cursoFiltro) && b.dia === nombreDiaSemana && b.tipo !== 'Recreo')
-  }, [blocks, cursoFiltro, nombreDiaSemana, courses])
+    return blocks.filter((b: Block) => b.curso === cursoInput && b.dia === nombreDiaSemana && b.tipo !== 'Recreo')
+  }, [blocks, cursoInput, nombreDiaSemana])
 
   useEffect(() => {
     if (claseSeleccionada !== 'manual') {
@@ -771,7 +775,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
     const matchCurso = cursoFiltro === 'Todos' || a.curso === cursoFiltro
     const matchDocente = !docenteFiltro || (a.docenteAusente || '').toLowerCase().includes(docenteFiltro.toLowerCase()) || (a.docenteDecreto || '').toLowerCase().includes(docenteFiltro.toLowerCase())
     let matchFecha = true
-    if (modoFecha === 'rango' && a.fecha && a.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (modoFecha === 'rango' && a.fecha) {
       matchFecha = a.fecha >= fechaDesde && a.fecha <= fechaHasta
     }
     return matchCurso && matchDocente && matchFecha
@@ -787,10 +791,10 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
 
   function registrarAusencia(e: React.FormEvent) {
     e.preventDefault()
-    if (!docenteInput || !cursoFiltro) return
+    if (!docenteInput || !cursoInput) return
     const nueva: AusenciaRecord = {
       id: `AUS-${Date.now().toString().slice(-4)}`,
-      curso: cursoFiltro === 'Todos' ? courses[0] : cursoFiltro,
+      curso: cursoInput,
       mes: 'Octubre', fecha: fechaInput, materia: materiaInput || 'Materia general',
       docenteAusente: docenteInput.toUpperCase(), estadoCobertura: estadoCob,
       docenteDecreto: estadoCob === 'Cubierto por Decreto' ? (docenteDecreto.toUpperCase() || 'CUBIERTO') : 'Sin cubrir'
@@ -847,7 +851,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
       <h3 className="mb-4 font-black text-lg text-[#0b5c46]">Registrar nueva ausencia docente</h3>
       <form onSubmit={registrarAusencia} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Curso
-          <select value={cursoFiltro === 'Todos' ? (courses[0] || '1°1°') : cursoFiltro} onChange={(e) => setCursoFiltro(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]">
+          <select value={cursoInput} onChange={(e) => setCursoInput(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]">
             {courses.map((c: string) => <option key={c}>{c}</option>)}
           </select>
         </label>
@@ -888,9 +892,9 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {viewMode === 'lista' && (
-            <Button variant="outline" size="sm" onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')} className="bg-white">
-              <ArrowDownUp className="size-4 mr-1.5" />
-              {sortOrder === 'desc' ? 'Más recientes' : 'Más antiguas'}
+            <Button variant="outline" size="sm" onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')} className="bg-white font-bold text-slate-700">
+              <ArrowDownUp className="size-4 mr-2" />
+              {sortOrder === 'desc' ? 'Orden: Más recientes' : 'Orden: Más antiguas'}
             </Button>
           )}
           <div className="bg-slate-100 p-1 rounded-lg flex border border-slate-200">
