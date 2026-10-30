@@ -334,7 +334,7 @@ export default function Page() {
           {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} blocks={blocks} />}
           {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
           {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
-          {view === 'suplencias'} && <SuplenciasView historial={historialSuplencias} setHistorial={setHistorialSuplencias} setDirty={setDirty} />}
+          {view === 'suplencias' && <SuplenciasView historial={historialSuplencias} setHistorial={setHistorialSuplencias} setDirty={setDirty} />}
         </main>
         
         <footer className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-2 border-t border-white/20 px-4 sm:px-5 py-4 text-xs text-slate-600 print:hidden text-center sm:text-left bg-white/80 backdrop-blur-md mt-auto w-full">
