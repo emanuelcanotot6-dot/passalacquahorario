@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbyb5ti3RFJZ2udYly76gcACUsY6oKAEFY75pS4EBT8SzaffDFpsG8bK3LzKXLRvoKN3/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -141,7 +141,7 @@ export default function Page() {
           if (b.id === next.id) return next;
           
           if (b.curso === next.curso && b.materia === next.materia && b.docente === next.docente && (b.grupo || '') === (next.grupo || '')) {
-            return { ...b, suplente: next.suplente }; // Sincroniza el suplente (se pone el nuevo, o se borra si está vacío)
+            return { ...b, suplente: next.suplente }; 
           }
           
           return b;
@@ -356,8 +356,18 @@ export default function Page() {
             const tzOffset = (new Date()).getTimezoneOffset() * 60000;
             const today = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
             setHistorialSuplencias(prev => [{ id: `HS-${Date.now()}-B`, fecha: today, curso: editing.curso, materia: editing.materia, titular: editing.docente, suplente: editing.suplente!.trim().toUpperCase(), accion: 'Baja' }, ...prev]);
+            
+            // También borramos el suplente en cascada
+            setBlocks((bs: Block[]) => bs.map((b: Block) => {
+              if (b.curso === editing.curso && b.materia === editing.materia && b.docente === editing.docente && (b.grupo || '') === (editing.grupo || '')) {
+                return { ...b, suplente: '' };
+              }
+              return b;
+            }));
+          } else {
+             // Solo borramos el bloque si no estamos quitando un suplente globalmente
+             setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); 
           }
-          setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); 
           setEditing(null); 
           setDirty((n) => n + 1) 
         }} />}
