@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbyb5ti3RFJZ2udYly76gcACUsY6oKAEFY75pS4EBT8SzaffDFpsG8bK3LzKXLRvoKN3/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -135,7 +135,17 @@ export default function Page() {
             setHistorialSuplencias(prev => [...newRecords, ...prev]);
           }
         }
-        return current.map((b: Block) => b.id === next.id ? next : b);
+        
+        // Sincronización en cascada: Aplica el nuevo suplente a todos los bloques hermanos (Mismo curso, materia y profe)
+        return current.map((b: Block) => {
+          if (b.id === next.id) return next;
+          
+          if (b.curso === next.curso && b.materia === next.materia && b.docente === next.docente && (b.grupo || '') === (next.grupo || '')) {
+            return { ...b, suplente: next.suplente }; // Sincroniza el suplente (se pone el nuevo, o se borra si está vacío)
+          }
+          
+          return b;
+        });
       } else {
         if (newSup) {
           const newRecords: SuplenciaRecord[] = [{ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' }];
