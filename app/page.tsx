@@ -113,31 +113,40 @@ export default function Page() {
   const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
-    setBlocks((current) => {
-      const old = current.find(b => b.id === next.id);
-      
-      if (old) {
-        const oldSup = (old.suplente || '').trim().toUpperCase();
-        const newSup = (next.suplente || '').trim().toUpperCase();
-        const today = new Date().toISOString().split('T')[0];
+    const old = blocks.find(b => b.id === next.id);
+    
+    // Ajuste de zona horaria para que tome la fecha exacta de Argentina (UTC-3)
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const today = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
 
-        if (oldSup !== newSup) {
-          const newRecords: SuplenciaRecord[] = [];
-          if (oldSup) {
-            newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
-          }
-          if (newSup) {
-            newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
-          }
-          if (newRecords.length > 0) {
-            setHistorialSuplencias(prev => [...newRecords, ...prev]);
-          }
+    const newSup = (next.suplente || '').trim().toUpperCase();
+    const newRecords: SuplenciaRecord[] = [];
+
+    if (old) {
+      // 1. Es un bloque existente que se está editando
+      const oldSup = (old.suplente || '').trim().toUpperCase();
+
+      if (oldSup !== newSup) {
+        if (oldSup) {
+          newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
         }
-        return current.map((b: Block) => b.id === next.id ? next : b);
-      } else {
-        return [...current, next];
+        if (newSup) {
+          newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+        }
       }
-    });
+      setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b));
+    } else {
+      // 2. Es un bloque TOTALMENTE NUEVO (Creado desde "+ Agregar")
+      if (newSup) {
+        newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+      }
+      setBlocks((current) => [...current, next]);
+    }
+
+    // Si hubo algún movimiento de suplentes, actualizamos el historial
+    if (newRecords.length > 0) {
+      setHistorialSuplencias(prev => [...newRecords, ...prev]);
+    }
 
     setEditing(null);
     setDirty((n) => n + 1); 
@@ -165,17 +174,17 @@ export default function Page() {
       const payload = await response.json()
       const rows = Array.isArray(payload) ? payload : payload.data ?? payload.rows ?? payload.blocks ?? payload.values
       
+      // Lector Inteligente Universal para todas las pestañas
       const read = (row: any, ...keys: string[]) => { 
         const lowerRow = Object.fromEntries(Object.entries(row || {}).map(([k, v]) => [k.toLowerCase(), v]));
         const found = keys.find((key) => lowerRow[key.toLowerCase()] !== undefined && lowerRow[key.toLowerCase()] !== ''); 
         return found ? lowerRow[found.toLowerCase()] : '' 
       }
       
-      // Sanitizador maestro para limpiar las fechas con horas que vienen del Excel (00:00:00)
       const parseDate = (val: any) => {
         const str = String(val || '');
         if (!str || str === 'undefined') return new Date().toISOString().split('T')[0];
-        return str.split('T')[0].split(' ')[0]; // Corta en la T o en el espacio.
+        return str.split('T')[0].split(' ')[0];
       }
       
       if (Array.isArray(rows) && rows.length) {
@@ -338,7 +347,9 @@ export default function Page() {
         </footer>
         {editing && <Editor block={editing} courses={courses} onClose={() => setEditing(null)} onSave={updateBlock} onDelete={() => { 
           if (editing && editing.suplente) {
-            setHistorialSuplencias(prev => [{ id: `HS-${Date.now()}-B`, fecha: new Date().toISOString().split('T')[0], curso: editing.curso, materia: editing.materia, titular: editing.docente, suplente: editing.suplente!.trim().toUpperCase(), accion: 'Baja' }, ...prev]);
+            const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            const today = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            setHistorialSuplencias(prev => [{ id: `HS-${Date.now()}-B`, fecha: today, curso: editing.curso, materia: editing.materia, titular: editing.docente, suplente: editing.suplente!.trim().toUpperCase(), accion: 'Baja' }, ...prev]);
           }
           setBlocks((bs: Block[]) => bs.filter((b: Block) => b.id !== editing.id)); 
           setEditing(null); 
@@ -731,7 +742,6 @@ function TeacherView({ query, setQuery, teachers, blocks, setEditing, ausencias 
 }
 
 function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: any) {
-  // Separé el estado del Buscador (cursoFiltro) del estado del Formulario (cursoInput)
   const [cursoFiltro, setCursoFiltro] = useState('Todos')
   const [docenteFiltro, setDocenteFiltro] = useState('')
   const [modoFecha, setModoFecha] = useState<'todo' | 'rango'>('todo')
@@ -742,7 +752,6 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [calendarDate, setCalendarDate] = useState(new Date())
 
-  // Estado independiente para registrar ausencias
   const [cursoInput, setCursoInput] = useState(courses[0] || '1°1°')
   const [fechaInput, setFechaInput] = useState(new Date().toISOString().split('T')[0])
   const [claseSeleccionada, setClaseSeleccionada] = useState<string>('manual')
