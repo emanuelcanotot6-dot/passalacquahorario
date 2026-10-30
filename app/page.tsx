@@ -66,7 +66,7 @@ type SuplenciaRecord = {
 }
 
 const logo = '/logo.png'
-const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbwu4e1jgQa9_FNL_bTRmug02v0P4_-weRsftCX99GityPQAwxUGvtIF54saJqiLVjp6/exec'
+const spreadsheetApi = 'https://script.google.com/macros/s/AKfycbyb5ti3RFJZ2udYly76gcACUsY6oKAEFY75pS4EBT8SzaffDFpsG8bK3LzKXLRvoKN3/exec'
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 const courses = ['1°1°', '1°2°', '1°3°', '1°4°', '1°5°', '1°6°', '2°1°', '2°2°', '2°3°', '2°4°', '2°5°', '2°6°', '3°1°', '3°2°', '3°3°', '3°4°', '3°5°', '3°6°', '4°1°', '4°2°', '4°3°', '4°4°', '4°5°', '5°1°', '5°2°', '5°3°', '5°6°', '5°7°', '6°1°', '6°2°', '6°3°', '6°6°', '6°7°', '7°1°', '7°2°', '7°3°', '7°6°', '7°7°']
 
@@ -113,40 +113,37 @@ export default function Page() {
   const dayBlocks = blocks.filter((b: Block) => b.tipo !== 'Recreo')
 
   function updateBlock(next: Block) { 
-    const old = blocks.find(b => b.id === next.id);
-    
-    // Ajuste de zona horaria para que tome la fecha exacta de Argentina (UTC-3)
-    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
-    const today = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+    setBlocks((current) => {
+      const old = current.find(b => b.id === next.id);
+      
+      const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+      const today = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
 
-    const newSup = (next.suplente || '').trim().toUpperCase();
-    const newRecords: SuplenciaRecord[] = [];
+      const newSup = (next.suplente || '').trim().toUpperCase();
+      const newRecords: SuplenciaRecord[] = [];
 
-    if (old) {
-      // 1. Es un bloque existente que se está editando
-      const oldSup = (old.suplente || '').trim().toUpperCase();
-
-      if (oldSup !== newSup) {
-        if (oldSup) {
-          newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
+      if (old) {
+        const oldSup = (old.suplente || '').trim().toUpperCase();
+        if (oldSup !== newSup) {
+          if (oldSup) {
+            newRecords.push({ id: `HS-${Date.now()}-B`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: oldSup, accion: 'Baja' });
+          }
+          if (newSup) {
+            newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+          }
+          if (newRecords.length > 0) {
+            setHistorialSuplencias(prev => [...newRecords, ...prev]);
+          }
         }
+        return current.map((b: Block) => b.id === next.id ? next : b);
+      } else {
         if (newSup) {
-          newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
+          const newRecords: SuplenciaRecord[] = [{ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' }];
+          setHistorialSuplencias(prev => [...newRecords, ...prev]);
         }
+        return [...current, next];
       }
-      setBlocks((current) => current.map((b: Block) => b.id === next.id ? next : b));
-    } else {
-      // 2. Es un bloque TOTALMENTE NUEVO (Creado desde "+ Agregar")
-      if (newSup) {
-        newRecords.push({ id: `HS-${Date.now()}-A`, fecha: today, curso: next.curso, materia: next.materia, titular: next.docente, suplente: newSup, accion: 'Alta' });
-      }
-      setBlocks((current) => [...current, next]);
-    }
-
-    // Si hubo algún movimiento de suplentes, actualizamos el historial
-    if (newRecords.length > 0) {
-      setHistorialSuplencias(prev => [...newRecords, ...prev]);
-    }
+    });
 
     setEditing(null);
     setDirty((n) => n + 1); 
@@ -174,11 +171,10 @@ export default function Page() {
       const payload = await response.json()
       const rows = Array.isArray(payload) ? payload : payload.data ?? payload.rows ?? payload.blocks ?? payload.values
       
-      // Lector Inteligente Universal para todas las pestañas
       const read = (row: any, ...keys: string[]) => { 
-        const lowerRow = Object.fromEntries(Object.entries(row || {}).map(([k, v]) => [k.toLowerCase(), v]));
-        const found = keys.find((key) => lowerRow[key.toLowerCase()] !== undefined && lowerRow[key.toLowerCase()] !== ''); 
-        return found ? lowerRow[found.toLowerCase()] : '' 
+        const lowerRow = Object.fromEntries(Object.entries(row || {}).map(([k, v]) => [k.toLowerCase().trim(), v]));
+        const found = keys.find((key) => lowerRow[key.toLowerCase().trim()] !== undefined && lowerRow[key.toLowerCase().trim()] !== ''); 
+        return found ? lowerRow[found.toLowerCase().trim()] : '' 
       }
       
       const parseDate = (val: any) => {
@@ -338,7 +334,7 @@ export default function Page() {
           {view === 'ausencias' && <AusenciasView ausencias={ausencias} setAusencias={setAusencias} setDirty={setDirty} courses={courses} blocks={blocks} />}
           {view === 'preceptores' && <PreceptoresView preceptores={preceptores} setPreceptores={setPreceptores} courses={courses} setDirty={setDirty} />}
           {view === 'paro' && <StrikeView dayBlocks={dayBlocks} courses={courses} paroHistorial={paroHistorial} setParoHistorial={setParoHistorial} setDirty={setDirty} preceptores={preceptores} />}
-          {view === 'suplencias' && <SuplenciasView historial={historialSuplencias} setHistorial={setHistorialSuplencias} setDirty={setDirty} />}
+          {view === 'suplencias'} && <SuplenciasView historial={historialSuplencias} setHistorial={setHistorialSuplencias} setDirty={setDirty} />}
         </main>
         
         <footer className="mx-auto flex max-w-[1500px] flex-col sm:flex-row items-center justify-between gap-2 border-t border-white/20 px-4 sm:px-5 py-4 text-xs text-slate-600 print:hidden text-center sm:text-left bg-white/80 backdrop-blur-md mt-auto w-full">
