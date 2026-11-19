@@ -830,35 +830,64 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
   }
 
   function descargarExcelAusencias() {
-    if (ausenciasParaTabla.length === 0) {
+    if (ausenciasFiltradas.length === 0) {
       alert('No hay ausencias para exportar con los filtros actuales.')
       return
     }
-    const wb = XLSX.utils.book_new()
-    const exportData = [
-      ['E.E.S.T. N° 6 - BANFIELD'],
-      ['HISTORIAL DE AUSENCIAS Y COBERTURA'],
-      [`Curso: ${cursoFiltro}  |  Docente: ${docenteFiltro || 'Todos'}  |  Periodo: ${modoFecha === 'rango' ? `${fechaDesde} a ${fechaHasta}` : 'Todo el historial'}`],
-      [''],
-      ['Curso', 'Fecha', 'Docente Ausente', 'Materia', 'Estado de Cobertura', 'Cubre por Decreto / Observación']
+
+    const mesesNombres = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ]
 
-    ausenciasParaTabla.forEach((a: AusenciaRecord) => {
+    const ordenadas = [...ausenciasFiltradas].sort((a: AusenciaRecord, b: AusenciaRecord) =>
+      (a.fecha || '').localeCompare(b.fecha || '')
+    )
+
+    const exportData: any[][] = [
+      ['MATERIA', 'DOCENTE', 'DIA Y HORARIO', 'PF CUBRE POR DECRETO']
+    ]
+    const merges: XLSX.Range[] = []
+
+    let mesActual = ''
+
+    ordenadas.forEach((a: AusenciaRecord) => {
+      let fechaFormateada = a.fecha || ''
+      let nombreMes = a.mes || ''
+
+      const match = (a.fecha || '').match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (match) {
+        const mesNum = parseInt(match[2], 10)
+        const diaNum = parseInt(match[3], 10)
+        fechaFormateada = `${diaNum}/${mesNum}`
+        nombreMes = mesesNombres[mesNum - 1] || nombreMes
+      }
+
+      if (nombreMes && nombreMes !== mesActual) {
+        mesActual = nombreMes
+        const rowIndex = exportData.length
+        exportData.push([nombreMes, '', '', ''])
+        merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 3 } })
+      }
+
       exportData.push([
-        a.curso,
-        a.fecha,
-        a.docenteAusente,
-        a.materia,
-        a.estadoCobertura,
-        a.docenteDecreto
+        a.materia || '',
+        a.docenteAusente || '',
+        fechaFormateada,
+        a.docenteDecreto || a.estadoCobertura || ''
       ])
     })
 
+    const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.aoa_to_sheet(exportData)
-    ws['!cols'] = [{ wch: 10 }, { wch: 14 }, { wch: 26 }, { wch: 28 }, { wch: 22 }, { wch: 30 }]
-    XLSX.utils.book_append_sheet(wb, ws, 'Ausencias')
-    const sufijo = cursoFiltro !== 'Todos' ? `-${cursoFiltro.replace(/°/g, '')}` : ''
-    XLSX.writeFile(wb, `ausencias${sufijo}.xlsx`)
+    ws['!merges'] = merges
+    ws['!cols'] = [{ wch: 28 }, { wch: 28 }, { wch: 16 }, { wch: 26 }]
+
+    const nombreHoja = cursoFiltro !== 'Todos' ? `Curso_${cursoFiltro.replace(/°/g, '_')}` : 'Ausencias'
+    const sufijoArchivo = cursoFiltro !== 'Todos' ? `-${cursoFiltro.replace(/°/g, '')}` : ''
+
+    XLSX.utils.book_append_sheet(wb, ws, nombreHoja)
+    XLSX.writeFile(wb, `ausencias${sufijoArchivo}.xlsx`)
   }
 
   const calYear = calendarDate.getFullYear()
