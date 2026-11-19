@@ -852,7 +852,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Filtrar por Curso
           <select value={cursoFiltro} onChange={(e) => setCursoFiltro(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold">
             <option value="Todos">Todos los cursos</option>
-            {courses.map((c: string) => <option key={c}>{c}</option>)}
+            {courses.map((c: string) => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Buscar por Docente
@@ -877,7 +877,7 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
       <form onSubmit={registrarAusencia} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Curso
           <select value={cursoInput} onChange={(e) => setCursoInput(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]">
-            {courses.map((c: string) => <option key={c}>{c}</option>)}
+            {courses.map((c: string) => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">Fecha
@@ -939,12 +939,12 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
             <thead className="bg-[#0b5c46] text-xs uppercase tracking-wider text-white">
               <tr><th className="p-3">Curso</th><th>Fecha</th><th>Docente ausente</th><th>Materia</th><th>Estado</th><th>Cubre por decreto / Observación</th></tr>
             </thead>
-            <tbody>
+            <tbody key={`${cursoFiltro}-${docenteFiltro}-${modoFecha}-${fechaDesde}-${fechaHasta}-${sortOrder}`}>
               {ausenciasParaTabla.length === 0 ? (
                 <tr><td colSpan={6} className="p-6 text-center text-slate-400 font-semibold">No se encontraron ausencias con los filtros seleccionados.</td></tr>
               ) : (
-                ausenciasParaTabla.map((a: AusenciaRecord) => (
-                  <tr key={a.id} className="border-t border-slate-100 hover:bg-[#f4faed]">
+                ausenciasParaTabla.map((a: AusenciaRecord, idx: number) => (
+                  <tr key={`${a.id}-${idx}`} className="border-t border-slate-100 hover:bg-[#f4faed]">
                     <td className="p-3 font-bold">{a.curso}</td><td>{a.fecha}</td><td className="font-black text-slate-800">{a.docenteAusente}</td><td className="font-bold text-[#1b5014]">{a.materia}</td>
                     <td><span className={`rounded-full px-2.5 py-1 text-xs font-bold shadow-sm border ${a.estadoCobertura === 'Cubierto por Decreto' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-100'}`}>{a.estadoCobertura}</span></td>
                     <td className="font-bold text-slate-700">{a.docenteDecreto}</td>
