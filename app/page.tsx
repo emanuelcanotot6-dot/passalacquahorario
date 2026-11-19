@@ -829,6 +829,38 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
     setDocenteInput(''); setDocenteDecreto(''); setClaseSeleccionada('manual')
   }
 
+  function descargarExcelAusencias() {
+    if (ausenciasParaTabla.length === 0) {
+      alert('No hay ausencias para exportar con los filtros actuales.')
+      return
+    }
+    const wb = XLSX.utils.book_new()
+    const exportData = [
+      ['E.E.S.T. N° 6 - BANFIELD'],
+      ['HISTORIAL DE AUSENCIAS Y COBERTURA'],
+      [`Curso: ${cursoFiltro}  |  Docente: ${docenteFiltro || 'Todos'}  |  Periodo: ${modoFecha === 'rango' ? `${fechaDesde} a ${fechaHasta}` : 'Todo el historial'}`],
+      [''],
+      ['Curso', 'Fecha', 'Docente Ausente', 'Materia', 'Estado de Cobertura', 'Cubre por Decreto / Observación']
+    ]
+
+    ausenciasParaTabla.forEach((a: AusenciaRecord) => {
+      exportData.push([
+        a.curso,
+        a.fecha,
+        a.docenteAusente,
+        a.materia,
+        a.estadoCobertura,
+        a.docenteDecreto
+      ])
+    })
+
+    const ws = XLSX.utils.aoa_to_sheet(exportData)
+    ws['!cols'] = [{ wch: 10 }, { wch: 14 }, { wch: 26 }, { wch: 28 }, { wch: 22 }, { wch: 30 }]
+    XLSX.utils.book_append_sheet(wb, ws, 'Ausencias')
+    const sufijo = cursoFiltro !== 'Todos' ? `-${cursoFiltro.replace(/°/g, '')}` : ''
+    XLSX.writeFile(wb, `ausencias${sufijo}.xlsx`)
+  }
+
   const calYear = calendarDate.getFullYear()
   const calMonth = calendarDate.getMonth()
   const monthNames = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE']
@@ -916,6 +948,15 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
           <p className="text-xs text-slate-500">Mostrando {ausenciasFiltradas.length} registros según los filtros seleccionados</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={descargarExcelAusencias}
+            className="border-blue-600 text-blue-700 hover:bg-blue-50 bg-white font-bold"
+          >
+            <FileSpreadsheet className="size-4 mr-1.5" />
+            Exportar Excel
+          </Button>
           {viewMode === 'lista' && (
             <Button variant="outline" size="sm" onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')} className="bg-white font-bold text-slate-700">
               <ArrowDownUp className="size-4 mr-2" />
@@ -976,15 +1017,15 @@ function AusenciasView({ ausencias, setAusencias, setDirty, courses, blocks }: a
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
                 const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const dayAbsences = ausenciasFiltradas.filter(a => a.fecha === dateStr);
+                const dayAbsences = ausenciasFiltradas.filter((a: AusenciaRecord) => a.fecha === dateStr);
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
 
                 return (
                   <div key={day} className="border-b border-r border-slate-200 p-2 min-h-[120px] flex flex-col hover:bg-slate-50 transition">
                     <span className={`text-sm font-black mb-1 ${isToday ? 'text-blue-600' : 'text-slate-800'}`}>{day}</span>
                     <div className="flex flex-col gap-1.5 overflow-y-auto flex-1 h-0 scrollbar-none">
-                      {dayAbsences.map(a => (
-                        <div key={a.id} className="text-[9px] leading-tight bg-red-50 text-red-700 p-1.5 rounded-md border border-red-100 font-bold shadow-sm uppercase flex flex-col gap-0.5">
+                      {dayAbsences.map((a: AusenciaRecord, idx: number) => (
+                        <div key={`${a.id}-${idx}`} className="text-[9px] leading-tight bg-red-50 text-red-700 p-1.5 rounded-md border border-red-100 font-bold shadow-sm uppercase flex flex-col gap-0.5">
                           <span className="text-[8px] bg-red-200/50 w-fit px-1 rounded-sm text-red-800">{a.curso}</span>
                           <span className="line-clamp-2">{a.docenteAusente}</span>
                           <span className="text-[7.5px] text-red-600/90 font-semibold line-clamp-1 leading-none">{a.materia}</span>
@@ -1360,6 +1401,78 @@ function Editor({ block, courses, onClose, onSave, onDelete }: { block: Block; c
       </div>
     </div>
   </div> 
+}
+
+function RecreosModal({ course, blocks, setBlocks, onClose, setDirty }: any) {
+  const [horario, setHorario] = useState('09:40–09:50')
+  const recreos = blocks.filter((b: Block) => b.curso === course && b.tipo === 'Recreo')
+
+  function agregarRecreo() {
+    if (!horario.trim()) return
+    const nuevo: Block = {
+      id: `REC-${Date.now()}`,
+      curso: course,
+      turno: 'Teoría',
+      tipo: 'Recreo',
+      dia: 'Lunes',
+      horario: horario.trim(),
+      materia: 'Recreo',
+      docente: '',
+      situacionRevista: 'Titular'
+    }
+    setBlocks((prev: Block[]) => [...prev, nuevo])
+    setDirty((n: number) => n + 1)
+    setHorario('')
+  }
+
+  function eliminarRecreo(id: string) {
+    setBlocks((prev: Block[]) => prev.filter((b: Block) => b.id !== id))
+    setDirty((n: number) => n + 1)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b p-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#d35400]">Recreos · {course}</p>
+            <h2 className="text-xl font-black">Administrar recreos</h2>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar"><X /></button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <div className="flex gap-2">
+            <input
+              value={horario}
+              onChange={(e) => setHorario(e.target.value)}
+              placeholder="Ej. 09:40–09:50"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0b5c46]"
+            />
+            <Button onClick={agregarRecreo} className="bg-[#0b5c46] text-white hover:bg-[#074030]">
+              <Plus className="size-4 mr-1" /> Agregar
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+            {recreos.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">No hay recreos cargados para este curso.</p>
+            ) : (
+              recreos.map((r: Block) => (
+                <div key={r.id} className="flex items-center justify-between rounded-lg border border-amber-200 bg-[#fef9e7] px-3 py-2">
+                  <span className="font-mono text-sm font-bold text-[#d35400]">{r.horario}</span>
+                  <Button variant="ghost" size="sm" onClick={() => eliminarRecreo(r.id)} className="text-red-600 hover:text-red-700 h-7 px-2">
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end border-t bg-slate-50 p-4 rounded-b-2xl">
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function Field({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) { 
